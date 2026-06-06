@@ -20,4 +20,29 @@ try {
     // Xavfsizlik yuzasidan xatolik ichidagi haqiqiy parollarni ekranga chiqarmaslik uchun:
     die("Baza bilan aloqa o'rnatilmadi.");
 }
+
+    // db.php faylingizning eng pastiga qo'shing:
+
+try {
+    // Agar blogs jadvali bo'lmasa, uni yaratish
+    $query = "CREATE TABLE IF NOT EXISTS blogs (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );";
+    
+    $pdo->exec($query);
+    
+    // Tekshirish uchun bazaga vaqtincha 1 ta ma'lumot qo'shib qo'yamiz (agar bo'sh bo'lsa)
+    $check = $pdo->query("SELECT COUNT(*) FROM blogs")->fetchColumn();
+    if ($check == 0) {
+        $pdo->exec("INSERT INTO blogs (title, content) VALUES ('Birinchi maqola', 'Telegram Mini App uchun test kontenti.');");
+    }
+
+} catch (PDOException $e) {
+    // Agar muammo jadval yaratishda bo'lsa, xatoni ko'rsatish
+    echo "Jadval yaratishda xato: " . $e->getMessage();
+}
+    
 ?>
