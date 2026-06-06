@@ -1,9 +1,61 @@
 <?php
-define('API_KEY', getenv("TOKEN"));
+define('TOKEN', getenv("TOKEN"));
 
 $admin = getenv("admin_ID");
 
-function bot($method,$datas=[]){
+// Xatoliklarni ekranga chiqarmaslik (Xavfsizlik va Webhook barqarorligi uchun)
+error_reporting(0);
+
+// Telegram API orqali xabar yuborish funksiyasi
+function sendMessage($chat_id, $text) {
+    $url = "https://api.telegram.org/bot" . TOKEN . "/sendMessage";
+    $data = [
+        'chat_id' => $chat_id,
+        'text' => $text,
+        'parse_mode' => 'HTML'
+    ];
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    return $response;
+}
+
+// Telegramdan kelgan so'rovni qabul qilish
+$input = file_get_contents('php://input');
+$update = json_decode($input);
+
+// Agar brauzerdan to'g'ridan-to'g'ri kirilsa, bot ishlamaydi
+if (!$update) {
+    die("Bot muvaffaqiyatli ishlamoqda. Uni Telegram orqali sinab ko'ring!");
+}
+
+// Faqat oddiy xabarlar (text) kelganda ishlash
+if (isset($update->message)) {
+    $message = $update->message;
+    $chat_id = $message->chat->id;
+    $text = $message->text;
+    $first_name = $message->from->first_name;
+
+    // Kelgan xabarni tekshirish
+    if ($text == "/start") {
+        $reply = "Assalomu alaykum, <b>" . htmlspecialchars($first_name) . "</b>!\nSodda test botimizga xush kelibsiz.";
+        sendMessage($chat_id, $reply);
+    } elseif (mb_strtolower($text, 'UTF-8') == "salom") {
+        $reply = "Salom! Ishlaringiz yaxshimi, " . htmlspecialchars($first_name) . "?";
+        sendMessage($chat_id, $reply);
+    } else {
+        $reply = "Men hozircha faqat /start va 'salom' so'zlariga javob bera olaman xolos. 😊";
+        sendMessage($chat_id, $reply);
+    }
+}
+
+/*function bot($method,$datas=[]){
 $url = "https://api.telegram.org/bot".API_KEY."/".$method;
 $ch = curl_init();
 curl_setopt($ch,CURLOPT_URL,$url);
@@ -555,4 +607,5 @@ bot('sendMessage',[
 ]);
 unlink("admin/$cid.txt");
 }
+*/
 ?>
