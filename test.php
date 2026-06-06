@@ -86,13 +86,15 @@ if (isset($update->callback_query)) {
         ]);
     }
 
-    // Biror viloyat tanlanganda namoz vaqtini ko'rsatish
+         // Biror viloyat tanlanganda namoz vaqtini ko'rsatish
     if (mb_stripos($data, "time=") !== false) {
         $ex = explode("=", $data);
         $region = $ex[1];
 
-        // Islomapi.uz dan ma'lumot olish
-        $api_url = "https://islomapi.uz/api/present/day?region=" . urlencode($region);
+        // Aladhan API orqali O'zbekiston shaharlari uchun ma'lumot olish
+        // method=3 -> Butunjahon Musulmon Ligasi (O'zbekistonga eng mos keladigan hisoblash usuli)
+        $api_url = "https://api.aladhan.com/v1/timingsByCity?city=" . urlencode($region) . "&country=Uzbekistan&method=3";
+        
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $api_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -102,29 +104,39 @@ if (isset($update->callback_query)) {
 
         $api = json_decode($api_response, true);
 
-        if ($api) {
-            $qayer = $api['region'];
-            $vaqti = $api['date'];
-            $hozir = $api['weekday'];
+        if ($api && $api['code'] === 200) {
+            $timings = $api['data']['timings'];
+            $date_info = $api['data']['date'];
+
+            // Vaqtlar
+            $tong = $timings['Fajr'];          // Tong otishi
+            $quyosh = $timings['Sunrise'];     // Quyosh chiqishi
+            $peshin = $timings['Dhuhr'];       // Peshin
+            $asr = $timings['Asr'];           // Asr
+            $shom = $timings['Maghrib'];       // Shom (Iftor)
+            $hufton = $timings['Isha'];        // Hufton
             
-            $tong = $api['times']['tong_saharlik'];
-            $quyosh = $api['times']['quyosh'];
-            $peshin = $api['times']['peshin'];
-            $asr = $api['times']['asr'];
-            $shom = $api['times']['shom_iftor'];
-            $hufton = $api['times']['hufton'];
+            // Sana va hafta kuni (Inglizchadan o'zbekchaga o'giramiz)
+            $milodiy_sana = $date_info['gregorian']['date']; // DD-MM-YYYY
+            $hafta_kuni_en = $date_info['gregorian']['weekday']['en'];
             
+            $hafta_kunlari = [
+                'Monday' => 'Dushanba', 'Tuesday' => 'Seshanba', 'Wednesday' => 'Chorshanba',
+                'Thursday' => 'Payshanba', 'Friday' => 'Juma', 'Saturday' => 'Shanba', 'Sunday' => 'Yakshanba'
+            ];
+            $hozir = $hafta_kunlari[$hafta_kuni_en] ?? $hafta_kuni_en;
+
             // Server soati (O'zbekiston vaqti: UTC+5)
             $soat = date("H:i", time() + (5 * 3600)); 
 
-            $text_reply = "<b>🕋 Namoz vaqtlari | $qayer</b>\n\n" .
+            $text_reply = "<b>🕋 Namoz vaqtlari | " . ucfirst($region) . "</b>\n\n" .
                           "<b>🌅 Tong otishi</b> - $tong\n" .
                           "<b>🌄 Quyosh chiqishi</b> - $quyosh\n" .
                           "<b>☀️ Peshin vaqti</b> - $peshin\n" .
                           "<b>🌞 Asr vaqti</b> - $asr\n" .
                           "<b>🌜 Shom vaqti</b> - $shom\n" .
                           "<b>🌕 Hufton vaqti</b> - $hufton\n\n" .
-                          "<b>$hozir | $vaqti | Soat: $soat</b>";
+                          "<b>$hozir | $milodiy_sana | Soat: $soat</b>";
 
             bot('deleteMessage', [
                 'chat_id' => $ccid,
@@ -143,7 +155,7 @@ if (isset($update->callback_query)) {
                 ])
             ]);
         } else {
-            // Agar Islomapi.uz ishlamay qolsa foydalanuvchiga bildirishnomalar yuborish
+            // Agar Aladhan API-da ham muammo bo'lsa
             bot('answerCallbackQuery', [
                 'callback_query_id' => $callback->id,
                 'text' => "⚠️ Ma'lumot olishda xatolik yuz berdi. Qayta urinib ko'ring.",
@@ -151,5 +163,6 @@ if (isset($update->callback_query)) {
             ]);
         }
     }
+
 }
 ?>
