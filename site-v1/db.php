@@ -1,8 +1,8 @@
 <?php
-$servername = "sql107.infinityfree.com";
-$username = "if0_41240747";
-$password = "wiNgwPtwYG";
-$dbname = "if0_41240747_users";
+$servername = "dpg-d8hpu8uq1p3s73dv0g8g-a";
+$username = "mydb_j6ea_user";
+$password = "pwen7B20OZAzaSuplkCdeBSOzGKjiij0";
+$dbname = "mydb_j6ea";
 
 try {
   $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
