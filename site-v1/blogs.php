@@ -1,9 +1,9 @@
 <?php
+session_start();
 require "db.php";
 $title = "Blogim";
 $blogs = "active";
 
-/*session_start();
 $_SESSION["admin"] = "xojiakbar";
 if(isset($_SESSION["post-yaratildi"])){
     $message = $_SESSION["post-yaratildi"];
@@ -21,7 +21,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST" and isset($_POST["DELETE"])){
     $statement->execute([$post_id]);
     header("Location:blogs.php");
 }
-*/
+
 require "includes/header.php";
 ?>
 
