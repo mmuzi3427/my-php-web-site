@@ -1,607 +1,155 @@
 <?php
+
 define('TOKEN', getenv("TOKEN"));
 
-$admin = getenv("admin_ID");
-
-// Xatoliklarni ekranga chiqarmaslik (Xavfsizlik va Webhook barqarorligi uchun)
+// Webhook barqarorligi va xavfsizlik uchun xatoliklarni ekranga chiqarmaymiz
 error_reporting(0);
-/*
-// Telegram API orqali xabar yuborish funksiyasi
-function sendMessage($chat_id, $text) {
-    $url = "https://api.telegram.org/bot" . TOKEN . "/sendMessage";
-    $data = [
-        'chat_id' => $chat_id,
-        'text' => $text,
-        'parse_mode' => 'HTML'
-    ];
-    
+
+// Telegram API bilan ishlash uchun asosiy funksiya
+function bot($method, $datas = []) {
+    $url = "https://api.telegram.org/bot" . TOKEN . "/" . $method;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $response = curl_exec($ch);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $datas);
+    // Tashqi SSL sertifikat muammolarini chetlab o'tish (Render uchun muhim)
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    $res = curl_exec($ch);
     curl_close($ch);
-    
-    return $response;
+    return json_decode($res);
 }
 
-// Faqat oddiy xabarlar (text) kelganda ishlash
-if (isset($update->message)) {
-    $message = $update->message;
-    $chat_id = $message->chat->id;
-    $text = $message->text;
-    $first_name = $message->from->first_name;
-
-    // Kelgan xabarni tekshirish
-    if ($text == "/start") {
-        $reply = "Assalomu alaykum, <b>" . htmlspecialchars($first_name) . "</b>!\nSodda test botimizga xush kelibsiz.";
-        sendMessage($chat_id, $reply);
-    } elseif (mb_strtolower($text, 'UTF-8') == "salom") {
-        $reply = "Salom! Ishlaringiz yaxshimi, " . htmlspecialchars($first_name) . "?";
-        sendMessage($chat_id, $reply);
-    } else {
-        $reply = "Men hozircha faqat /start va 'salom' so'zlariga javob bera olaman xolos. 😊";
-        sendMessage($chat_id, $reply);
-    }
-}
-
-*/
-function bot($method,$datas=[]){
-$url = "https://api.telegram.org/bot".TOKEN."/".$method;
-$ch = curl_init();
-curl_setopt($ch,CURLOPT_URL,$url);
-curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-curl_setopt($ch,CURLOPT_POSTFIELDS,$datas);
-$res = curl_exec($ch);
-if(curl_error($ch)){
-var_dump(curl_error($ch));
-}else{
-return json_decode($res);
-}}
-
-function joinchat($id){
-global $mid;
-$array = array("inline_keyboard");
-$kanallar=null;//file_get_contents("channel.txt");
-if($kanallar == null){
-return true;
-}else{
-$ex = explode("\n",$kanallar);
-for($i=0;$i<=count($ex) -1;$i++){
-$first_line = $ex[$i];
-$first_ex = explode("@",$first_line);
-$url = $first_ex[1];
-$ism=bot('getChat',['chat_id'=>"@".$url,])->result->title;
-$ret = bot("getChatMember",[
-"chat_id"=>"@$url",
-"user_id"=>$id,
-]);
-$stat = $ret->result->status;
-if((($stat=="creator" or $stat=="administrator" or $stat=="member"))){
-$array['inline_keyboard']["$i"][0]['text'] = "✅ ". $ism;
-$array['inline_keyboard']["$i"][0]['url'] = "https://t.me/$url";
-}else{
-$array['inline_keyboard']["$i"][0]['text'] = "❌ ". $ism;
-$array['inline_keyboard']["$i"][0]['url'] = "https://t.me/$url";
-$uns = true;
-}
-}
-$array['inline_keyboard']["$i"][0]['text'] = "🔄 Tekshirish";
-$array['inline_keyboard']["$i"][0]['callback_data'] = "azo_boldim";
-if($uns == true){
-bot('sendMessage',[
-'chat_id'=>$id,
-'text'=>"<b>⚠️ Botdan to'liq foydalanish uchun quyidagi kanallarimizga obuna bo'ling!</b>",
-'parse_mode'=>'html',
-'disable_web_page_preview'=>true,
-'reply_markup'=>json_encode($array),
-]);
-return false;
-}else{
-return true;
-}}}
-
+// Telegram serveridan kelgan JSON ma'lumotni o'qish
 $update = json_decode(file_get_contents('php://input'));
-// Agar brauzerdan to'g'ridan-to'g'ri kirilsa, bot ishlamaydi
+
+// Agar brauzerdan kirilsa, kod ishlashni to'xtatadi va xato bermaydi
 if (!$update) {
     die("Bot muvaffaqiyatli ishlamoqda. Uni Telegram orqali sinab ko'ring!");
 }
-$message = $update->message;
-$cid = $message->chat->id;
-$tx = $message->text;
-$mid = $message->message_id;
-$name = $message->from->first_name;
-$fid = $message->from->id;
-$callback = $update->callback_query;
-$data = $callback->data;
-$callid = $callback->id;
-$ccid = $callback->message->chat->id;
-$cmid = $callback->message->message_id;
-$from_id = $update->message->from->id;
-$token = $message->text;
-$text = $message->text;
-$name = $message->from->first_name;
-$message_id = $callback->message->message_id;
-$data = $update->callback_query->data;
-$callcid=$update->callback_query->message->chat->id;
-$cqid = $update->callback_query->id;
-$callfrid = $update->callback_query->from->id;
-$botname = bot('getme',['bot'])->result->username;
-#-----------------------------
-//mkdir("step");
-#-----------------------------
 
-/*if(!file_exists("channel.txt")){
-file_put_contents("channel.txt","");
-}
-if(file_get_contents("obunachi.txt")){
-} else{
-file_put_contents("obunachi.txt", "");
-}
-*/
-$statistika="1";//file_get_contents("obunachi.txt");
-$soat=date("H:i",strtotime("2 hour"));
-$userstep="1";//file_get_contents("step/$fid.txt");
-$kanallar=""://file_get_contents("channel.txt");
-
-/*if(isset($callback)){
-$get = file_get_contents("obunachi.txt");
-if(mb_stripos($get,$callfrid)==false){
-file_put_contents("obunachi.txt", "$get\n$callfrid");
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>👤 Yangi obunachi qo'shildi</b>",
-'parse_mode'=>"html"
+// Viloyatlar ro'yxati va tugmalari (Inline Keyboard)
+$regions_keyboard = json_encode([
+    'inline_keyboard' => [
+        [['text' => "🕐 Xiva", 'callback_data' => "time=Xiva"], ['text' => "🕑 Nukus", 'callback_data' => "time=Nukus"]],
+        [['text' => "🕒 Qarshi", 'callback_data' => "time=Qarshi"], ['text' => "🕓 Jizzax", 'callback_data' => "time=Jizzax"]],
+        [['text' => "🕔 Navoiy", 'callback_data' => "time=Navoiy"], ['text' => "🕕 Buxoro", 'callback_data' => "time=Buxoro"]],
+        [['text' => "🕖 Andijon", 'callback_data' => "time=Andijon"], ['text' => "🕝 Guliston", 'callback_data' => "time=Guliston"]],
+        [['text' => "🕗 Urganch", 'callback_data' => "time=Urganch"], ['text' => "九 Farg'ona", 'callback_data' => "time=Farg'ona"]],
+        [['text' => "🕙 Toshkent", 'callback_data' => "time=Toshkent"], ['text' => "🕚 Zarafshon", 'callback_data' => "time=Zarafshon"]],
+        [['text' => "🕛 Namangan", 'callback_data' => "time=Namangan"], ['text' => "🕜 Samarqand", 'callback_data' => "time=Samarqand"]],
+    ]
 ]);
-}}
 
-if(isset($message)){
-$get = file_get_contents("obunachi.txt");
-if(mb_stripos($get,$fid)==false){
-file_put_contents("obunachi.txt",  "$get\n$fid");
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>👤 Yangi obunachi qo'shildi</b>",
-'parse_mode'=>"html"
-]);
-}}
-*/
-if($tx=="/start" and joinchat($cid)=="true"){
-bot('sendphoto',[
-'chat_id'=>$cid,
-'photo'=>"https://t.me/botim1chi/450",
-'caption'=>"<b>☪ Assalomu alaykum xurmatli foydalanuvchi botimizga xush kelibsiz:</b>
+$start_caption = "<b>☪ Assalomu alaykum xurmatli foydalanuvchi, botimizga xush kelibsiz!</b>\n\n<i>'Namozni to'kis ado etinglar. Albatta, namoz mo'minlarga vaqtida farz qilingandir'</i>\n<b>Niso surasi, 103-oyat</b>";
 
-<i>'Namozni to'kis ado etinglar. Albatta, namoz mo'minlarga vaqtida farz qilingandir'</i>
-<b>Niso surasi, 103-oyat</b>",
-'parse_mode'=>'html',
-'reply_markup'=>json_encode([
-'inline_keyboard'=>[
-[['text'=>"🕐 Xiva",'callback_data'=>"time=Xiva"],['text'=>"🕑 Nukus",'callback_data'=>"time=Nukus"]],
-[['text'=>"🕒 Qarshi",'callback_data'=>"time=Qarshi"],['text'=>"🕓 Jizzax",'callback_data'=>"time=Jizzax"]],
-[['text'=>"🕔 Navoiy",'callback_data'=>"time=Navoiy"],['text'=>"🕕 Buxoro",'callback_data'=>"time=Buxoro"]],
-[['text'=>"🕖 Andijon",'callback_data'=>"time=Andijon"],['text'=>"🕝 Guliston",'callback_data'=>"time=Guliston"]],
-[['text'=>"🕗 Urganch",'callback_data'=>"time=Urganch"],['text'=>"🕘 Farg'ona",'callback_data'=>"time=Farg'ona"]],
-[['text'=>"🕙 Toshkent",'callback_data'=>"time=Toshkent"],['text'=>"🕚 Zarafshon",'callback_data'=>"time=Zarafshon"]],
-[['text'=>"🕛 Namangan",'callback_data'=>"time=Namangan"],['text'=>"🕜 Samarqand",'callback_data'=>"time=Samarqand"]],
-]])
-]);
-unlink("step/$cid.txt");
+// --------------------------------------------------------------------
+// 1. CHAT XABARLARINI QABUL QILISH (TEXT)
+// --------------------------------------------------------------------
+if (isset($update->message)) {
+    $message = $update->message;
+    $cid = $message->chat->id;
+    $tx = $message->text;
+
+    if ($tx == "/start") {
+        bot('sendphoto', [
+            'chat_id' => $cid,
+            'photo' => "https://t.me/botim1chi/450",
+            'caption' => $start_caption,
+            'parse_mode' => 'html',
+            'reply_markup' => $regions_keyboard
+        ]);
+    }
 }
 
-if($data == "azo_boldim"){
-if(joinchat($ccid) == "true"){
-bot('deleteMessage',[
-'chat_id'=>$ccid,
-'message_id'=>$cmid,
-]);
-bot('sendphoto',[
-'chat_id'=>$ccid,
-'photo'=>"https://t.me/botim1chi/450",
-'caption'=>"<b>☪ Assalomu alaykum xurmatli foydalanuvchi botimizga xush kelibsiz:</b>
+// --------------------------------------------------------------------
+// 2. TUGMALAR BOSILGANDA (CALLBACK QUERY)
+// --------------------------------------------------------------------
+if (isset($update->callback_query)) {
+    $callback = $update->callback_query;
+    $data = $callback->data;
+    $ccid = $callback->message->chat->id;
+    $cmid = $callback->message->message_id;
 
+    // Bosh menyuga qaytish tugmasi bosilganda
+    if ($data == "menyu") {
+        bot('deleteMessage', [
+            'chat_id' => $ccid,
+            'message_id' => $cmid,
+        ]);
+        bot('sendphoto', [
+            'chat_id' => $ccid,
+            'photo' => "https://t.me/botim1chi/450",
+            'caption' => $start_caption,
+            'parse_mode' => 'html',
+            'reply_markup' => $regions_keyboard
+        ]);
+    }
 
-<i>'Namozni to'kis ado etinglar. Albatta, namoz mo'minlarga vaqtida farz qilingandir'</i>
-<b>Niso surasi, 103-oyat</b>",
-'parse_mode'=>'html',
-'reply_markup'=>json_encode([
-'inline_keyboard'=>[
-[['text'=>"🕐 Xiva",'callback_data'=>"time=Xiva"],['text'=>"🕑 Nukus",'callback_data'=>"time=Nukus"]],
-[['text'=>"🕒 Qarshi",'callback_data'=>"time=Qarshi"],['text'=>"🕓 Jizzax",'callback_data'=>"time=Jizzax"]],
-[['text'=>"🕔 Navoiy",'callback_data'=>"time=Navoiy"],['text'=>"🕕 Buxoro",'callback_data'=>"time=Buxoro"]],
-[['text'=>"🕖 Andijon",'callback_data'=>"time=Andijon"],['text'=>"🕝 Guliston",'callback_data'=>"time=Guliston"]],
-[['text'=>"🕗 Urganch",'callback_data'=>"time=Urganch"],['text'=>"🕘 Farg'ona",'callback_data'=>"time=Farg'ona"]],
-[['text'=>"🕙 Toshkent",'callback_data'=>"time=Toshkent"],['text'=>"🕚 Zarafshon",'callback_data'=>"time=Zarafshon"]],
-[['text'=>"🕛 Namangan",'callback_data'=>"time=Namangan"],['text'=>"🕜 Samarqand",'callback_data'=>"time=Samarqand"]],
-]])
-]);
-}else{
-bot('deleteMessage',[
-'chat_id'=>$ccid,
-'message_id'=>$cmid,
-]);
-}}
+    // Biror viloyat tanlanganda namoz vaqtini ko'rsatish
+    if (mb_stripos($data, "time=") !== false) {
+        $ex = explode("=", $data);
+        $region = $ex[1];
 
-if($data == "menyu" and joinchat($ccid) == "true"){
-bot('deleteMessage',[
-'chat_id'=>$ccid,
-'message_id'=>$cmid,
-]);
-bot('sendphoto',[
-'chat_id'=>$ccid,
-'photo'=>"https://t.me/botim1chi/450",
-'caption'=>"<b>☪ Assalomu alaykum xurmatli foydalanuvchi botimizga xush kelibsiz:</b>
+        // Islomapi.uz dan ma'lumot olish
+        $api_url = "https://islomapi.uz/api/present/day?region=" . urlencode($region);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $api_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $api_response = curl_exec($ch);
+        curl_close($ch);
 
-<i>'Namozni to'kis ado etinglar. Albatta, namoz mo'minlarga vaqtida farz qilingandir'</i>
-<b>Niso surasi, 103-oyat</b>",
-'parse_mode'=>'html',
-'reply_markup'=>json_encode([
-'inline_keyboard'=>[
-[['text'=>"🕐 Xiva",'callback_data'=>"time=Xiva"],['text'=>"🕑 Nukus",'callback_data'=>"time=Nukus"]],
-[['text'=>"🕒 Qarshi",'callback_data'=>"time=Qarshi"],['text'=>"🕓 Jizzax",'callback_data'=>"time=Jizzax"]],
-[['text'=>"🕔 Navoiy",'callback_data'=>"time=Navoiy"],['text'=>"🕕 Buxoro",'callback_data'=>"time=Buxoro"]],
-[['text'=>"🕖 Andijon",'callback_data'=>"time=Andijon"],['text'=>"🕝 Guliston",'callback_data'=>"time=Guliston"]],
-[['text'=>"🕗 Urganch",'callback_data'=>"time=Urganch"],['text'=>"🕘 Farg'ona",'callback_data'=>"time=Farg'ona"]],
-[['text'=>"🕙 Toshkent",'callback_data'=>"time=Toshkent"],['text'=>"🕚 Zarafshon",'callback_data'=>"time=Zarafshon"]],
-[['text'=>"🕛 Namangan",'callback_data'=>"time=Namangan"],['text'=>"🕜 Samarqand",'callback_data'=>"time=Samarqand"]],
-]])
-]);
-unlink("step/$ccid.txt");
+        $api = json_decode($api_response, true);
+
+        if ($api) {
+            $qayer = $api['region'];
+            $vaqti = $api['date'];
+            $hozir = $api['weekday'];
+            
+            $tong = $api['times']['tong_saharlik'];
+            $quyosh = $api['times']['quyosh'];
+            $peshin = $api['times']['peshin'];
+            $asr = $api['times']['asr'];
+            $shom = $api['times']['shom_iftor'];
+            $hufton = $api['times']['hufton'];
+            
+            // Server soati (O'zbekiston vaqti: UTC+5)
+            $soat = date("H:i", time() + (5 * 3600)); 
+
+            $text_reply = "<b>🕋 Namoz vaqtlari | $qayer</b>\n\n" .
+                          "<b>🌅 Tong otishi</b> - $tong\n" .
+                          "<b>🌄 Quyosh chiqishi</b> - $quyosh\n" .
+                          "<b>☀️ Peshin vaqti</b> - $peshin\n" .
+                          "<b>🌞 Asr vaqti</b> - $asr\n" .
+                          "<b>🌜 Shom vaqti</b> - $shom\n" .
+                          "<b>🌕 Hufton vaqti</b> - $hufton\n\n" .
+                          "<b>$hozir | $vaqti | Soat: $soat</b>";
+
+            bot('deleteMessage', [
+                'chat_id' => $ccid,
+                'message_id' => $cmid,
+            ]);
+
+            bot('sendMessage', [
+                'chat_id' => $ccid,
+                'text' => $text_reply,
+                'parse_mode' => 'html',
+                'reply_markup' => json_encode([
+                    'inline_keyboard' => [
+                        [['text' => "🔁 Yangilash", 'callback_data' => "time=$region"]],
+                        [['text' => "🏠 Bosh menyu", 'callback_data' => "menyu"]],
+                    ]
+                ])
+            ]);
+        } else {
+            // Agar Islomapi.uz ishlamay qolsa foydalanuvchiga bildirishnomalar yuborish
+            bot('answerCallbackQuery', [
+                'callback_query_id' => $callback->id,
+                'text' => "⚠️ Ma'lumot olishda xatolik yuz berdi. Qayta urinib ko'ring.",
+                'show_alert' => true
+            ]);
+        }
+    }
 }
-
-if(mb_stripos($data, "time=")!==false){
-$ex = explode("=",$data);
-$region = $ex[1];
-$api = json_decode(file_get_contents("https://islomapi.uz/api/present/day?region=$region"),true);
-$qayer = $api['region'];
-$vaqti = $api['date'];
-$hozir = $api['weekday'];
-$tong = $api['times']['tong_saharlik'];
-$quyosh = $api['times']['quyosh'];
-$peshin = $api['times']['peshin'];
-$asr = $api['times']['asr'];
-$shom = $api['times']['shom_iftor'];
-$hufton = $api['times']['hufton'];
-bot('deleteMessage',[
-'chat_id'=>$ccid,
-'message_id'=>$cmid,
-]);
-bot('sendMessage',[
-'chat_id'=>$ccid,
-'text'=>"<b>🕋 Namoz vaqtlari | $qayer</b>
-
-<b>🌅 Tong otishi</b> - $tong
-<b>🌄 Quyosh chiqishi</b> - $quyosh
-<b>☀️ Peshin vaqti</b> - $peshin
-<b>🌞 Asr vaqti</b> - $asr 
-<b>🌜 Shom vaqti</b> - $shom
-<b>🌕 Hufton vaqti</b> - $hufton
-
-<b>$hozir | $vaqti | $soat</b>",
-'parse_mode'=>'html',
-'reply_markup'=>json_encode([
-'inline_keyboard'=>[
-[['text'=>"Yangilash",'callback_data'=>"time=$region"]],
-[['text'=>"🏠 Bosh menyu",'callback_data'=>"menyu"]],
-]])
-]);
-}
-
-$admin1_menu = json_encode([
-'resize_keyboard'=>true,
-'keyboard'=>[
-[['text'=>"📨 Xabar yuborish"]],
-[['text'=>"📢 Kanallar"],['text'=>"📊 Statistika"]],
-]]);
-
-if($tx == "🗄 Boshqaruv" and $cid == $admin){
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>🗄 Boshqaruv paneliga xush kelibsiz!</b>",
-'parse_mode'=>"html",
-'reply_markup'=>$admin1_menu
-]);
-unlink("step/$cid.txt");
-}
-
-$oddiy_xabar = file_get_contents("oddiy.txt");
-if($data == "oddiy_xabar" and $ccid==$admin){
-$lich=substr_count($statistika,"\n");
-bot('deleteMessage',[
-'chat_id'=>$admin,
-'message_id'=>$cmid,
-]);
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>$lich ta foydalanuvchiga yuboriladigan xabar matnini yuboring:</b>",
-'parse_mode'=>"html",
-'reply_markup'=>json_encode([
-'resize_keyboard'=>true,
-'keyboard'=>[
-[['text'=>"🗄 Boshqaruv"]],
-]])
-]);
-file_put_contents("oddiy.txt","oddiy");
-}
-if($oddiy_xabar=="oddiy" and $cid==$admin){
-if($tx=="🗄 Boshqaruv"){
-unlink("oddiy.txt");
-}else{
-$lich=substr_count($statistika,"\n");
-bot('sendmessage',[
-'chat_id'=>$admin,
-'text'=>"<b>$lich ta foydalanuvchiga xabar yuborish boshlandi!</b>",
-'parse_mode'=>"html",
-'reply_markup'=>$admin1_menu,
-]);
-$lichka = explode("\n",$statistika);
-foreach($lichka as $lichkalar){
-$usr=bot("sendMessage",[
-'chat_id'=>$lichkalar,
-'text'=>$text,
-'parse_mode'=>'HTML'
-]);
-unlink("oddiy.txt");
-}}}
-if($usr){
-$lich=substr_count($statistika,"\n");
-bot("sendmessage",[
-'chat_id'=>$admin,
-'text'=>"<b>$lich ta foydalanuvchiga muvaffaqiyatli yuborildi</b>",
-'parse_mode'=>'html',
-'reply_markup'=>$admin1_menu,
-]);
-unlink("oddiy.txt");
-}
-
-$forward_xabar = file_get_contents("forward.txt");
-if($data =="forward_xabar" and $ccid==$admin){
-$lich=substr_count($statistika,"\n");
-bot('deleteMessage',[
-'chat_id'=>$admin,
-'message_id'=>$cmid,
-]);
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>$lich ta foydalanuvchiga yuboriladigan xabarni forward shaklida yuboring:</b>",
-'parse_mode'=>"html",
-'reply_markup'=>json_encode([
-'resize_keyboard'=>true,
-'keyboard'=>[
-[['text'=>"🗄 Boshqaruv"]],
-]])
-]);
-file_put_contents("forward.txt","forward");
-}
-if($forward_xabar=="forward" and $cid==$admin){
-if($tx=="🗄 Boshqaruv"){
-unlink("forward.txt");
-}else{
-$lich=substr_count($statistika,"\n");
-bot('sendmessage',[
-'chat_id'=>$admin,
-'text'=>"<b>$lich ta foydalanuvchiga xabar yuborish boshlandi!</b>",
-'parse_mode'=>"html",
-'reply_markup'=>$admin1_menu,
-]);
-$lichka = explode("\n",$statistika);
-foreach($lichka as $lichkalar){
-$fors=bot("forwardMessage",[
-'from_chat_id'=>$cid,
-'chat_id'=>$lichkalar,
-'message_id'=>$mid,
-]);
-unlink("forward.txt");
-}}}
-if($fors){
-$lich=substr_count($statistika,"\n");
-bot("sendmessage",[
-'chat_id'=>$admin,
-'text'=>"<b>$lich ta foydalanuvchiga muvaffaqiyatli yuborildi</b>",
-'parse_mode'=>'html',
-'reply_markup'=>$admin1_menu,
-]);
-unlink("forward.txt");
-}
-
-if($tx=="📨 Xabar yuborish" and $cid==$admin){
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>📨 Yuboriladigan xabar turini tanlang:</b>",
-'parse_mode'=>"html",
-'reply_markup'=> json_encode([
-'inline_keyboard'=>[
-[['text'=>"Oddiy xabar",'callback_data'=>"oddiy_xabar"]],
-[['text'=>"Forward xabar",'callback_data'=>"forward_xabar"]],
-]])
-]);
-}
-
-$admin6_menu = json_encode([
-'inline_keyboard'=>[
-[['text'=>"🔐 Majburiy obuna",'callback_data'=>"majburiy_obuna"]],
-]]);
-
-if($data=="kanalsoz" and $ccid==$admin){
-bot('deleteMessage',[
-'chat_id'=>$admin,
-'message_id'=>$cmid,
-]);
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>Quyidagilardan birini tanlang:</b>",
-'parse_mode'=>"html",
-'reply_markup'=>json_encode([
-'inline_keyboard'=>[
-[['text'=>"🔐 Majburiy obuna",'callback_data'=>"majburiy_obuna"]],
-]])
-]);
-unlink("step/$ccid.txt");
-}
-
-if($tx == "📊 Statistika" and $cid == $admin){
-$lich=substr_count($statistika,"\n");
-$load = sys_getloadavg();
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>💡 O'rtacha yuklanish:</b> <code>$load[0]</code>
-
-👥 <b>Foydalanuvchilar: $lich ta</b>",
-'parse_mode'=>"html",
-'reply_markup'=>json_encode([
-'inline_keyboard'=>[
-[['text'=>"🔁 Yangilash",'callback_data'=>"stats"]],
-]])
-]);
-}
-
-if($data=="stats" and $ccid == $admin){
-$lich=substr_count($statistika,"\n");
-$load = sys_getloadavg();
-bot('deleteMessage',[
-'chat_id'=>$admin,
-'message_id'=>$cmid,
-]);
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>💡 O'rtacha yuklanish:</b> <code>$load[0]</code>
-
-👥 <b>Foydalanuvchilar: $lich ta</b>",
-'parse_mode'=>"html",
-'reply_markup'=>json_encode([
-'inline_keyboard'=>[
-[['text'=>"🔁 Yangilash",'callback_data'=>"stats"]],
-]])
-]);
-}
-
-if($tx=="📢 Kanallar" and $cid==$admin){
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>Quyidagilardan birini tanlang:</b>",
-'parse_mode'=>"html",
-'reply_markup'=>$admin6_menu
-]);
-}
-
-if($data=="majburiy_obuna" and $ccid==$admin){
-bot('editMessageText',[
-'chat_id'=>$admin,
-'message_id'=>$cmid,
-'text'=>"<b>Majburiy obunalarni sozlash bo'limidasiz:</b>",
-'parse_mode'=>"html",
-'reply_markup'=>json_encode([
-'inline_keyboard'=>[
-[['text'=>"📋 Ro'yxatni ko'rish",'callback_data'=>"majburiy_obuna3"]],
-[['text'=>"➕ Kanal qo'shish",'callback_data'=>"majburiy_obuna1"],['text'=>"🗑 O'chirish",'callback_data'=>"majburiy_obuna2"]],
-[['text'=>"◀️ Orqaga",'callback_data'=>"kanalsoz"]],
-
-]])
-]);
-unlink("step/$cid.txt");
-}
-
-$majburiy = file_get_contents("maj.txt");
-if($data=="majburiy_obuna1" and $ccid == $admin){
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>📢 Kerakli kanalni manzilini yuboring:</b>
-
-Namuna: @HaydarovUz",
-'parse_mode'=>"html",
-'reply_markup'=>json_encode([
-'resize_keyboard'=>true,
-'keyboard'=>[
-[['text'=>"🗄 Boshqaruv"]],
-]])
-]);
-file_put_contents("maj.txt","majburiy1");
-}
-if($majburiy == "majburiy1" and $cid==$admin){
-if($tx=="🗄 Boshqaruv"){
-unlink("maj.txt");
-}else{
-if(stripos($text,"@")!==false){
-if($kanallar == null){
-file_put_contents("channel.txt",$text);
-bot('SendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>$text - kanal qo'shildi</b>",
-'parse_mode'=>'html',
-'reply_markup'=>$admin1_menu,
-]);
-unlink("maj.txt");
-}else{
-file_put_contents("channel.txt","$kanallar\n$text");
-bot('SendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>$text - kanal qo'shildi</b>",
-'parse_mode'=>'html',
-'reply_markup'=>$admin1_menu,
-]);
-unlink("maj.txt");
-}}else{
-bot('SendMessage',[
-'chat_id'=>$cid,
-'text'=>"<b>⚠️ Kanal manzili kiritishda xatolik:</b>
-
-Masalan: @HaydarovUz",
-'parse_mode'=>'html',
-]);
-}}}
-
-if($data=="majburiy_obuna2" and $ccid == $admin){
-bot('deleteMessage',[
-'chat_id'=>$admin,
-'message_id'=>$cmid,
-]);
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"<b>🗑 Kanallar o'chirildi!</b>",
-'parse_mode'=>"html",
-]);
-unlink("channel.txt");
-}
-
-if($data=="majburiy_obuna3" and $ccid==$admin){
-if($kanallar==null){
-bot('editMessageText',[
-'chat_id'=>$admin,
-'message_id'=>$cmid,
-'text'=>"<b>Kanallar ulanmagan!</b>",
-'parse_mode'=>"html",
-'reply_markup'=>json_encode([
-'inline_keyboard'=>[
-[['text'=>"◀️ Orqaga",'callback_data'=>"majburiy_obuna"]],
-]])
-]);
-}else{
-$soni = substr_count($kanallar,"@");
-bot('editMessageText',[
-'chat_id'=>$admin,
-'message_id'=>$cmid,
-'text'=>"<b>Ulangan kanallar ro'yxati ⤵️</b>
-➖➖➖➖➖➖➖➖
-
-<i>$kanallar</i>
-
-<b>Ulangan kanallar soni:</b> $soni ta",
-'parse_mode'=>"html",
-'reply_markup'=>json_encode([
-'inline_keyboard'=>[
-[['text'=>"◀️ Orqaga",'callback_data'=>"majburiy_obuna"]],
-]])
-]);
-}}
-
-if($tx=="/panel" and $cid==$admin){
-bot('sendMessage',[
-'chat_id'=>$admin,
-'text'=>"🖥",
-'reply_markup'=>$admin1_menu,
-]);
-unlink("admin/$cid.txt");
-}
-
 ?>
