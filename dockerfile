@@ -1,4 +1,9 @@
 FROM php:8.2-apache
+
+# Bu buyruq oxirida albatta Enter bosing, keyingi buyruq mutlaqo yangi qatorda bo'lsin!
 RUN apt-get update && apt-get install -y libpq-dev \
-    && docker-php-ext-install pdo pdo_mysql pdo_pgsqlCOPY . /var/www/html/
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql
+
+COPY . /var/www/html/
+
 EXPOSE 80
