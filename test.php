@@ -5,7 +5,7 @@ $admin = getenv("admin_ID");
 
 // Xatoliklarni ekranga chiqarmaslik (Xavfsizlik va Webhook barqarorligi uchun)
 error_reporting(0);
-
+/*
 // Telegram API orqali xabar yuborish funksiyasi
 function sendMessage($chat_id, $text) {
     $url = "https://api.telegram.org/bot" . TOKEN . "/sendMessage";
@@ -24,15 +24,6 @@ function sendMessage($chat_id, $text) {
     curl_close($ch);
     
     return $response;
-}
-
-// Telegramdan kelgan so'rovni qabul qilish
-$input = file_get_contents('php://input');
-$update = json_decode($input);
-
-// Agar brauzerdan to'g'ridan-to'g'ri kirilsa, bot ishlamaydi
-if (!$update) {
-    die("Bot muvaffaqiyatli ishlamoqda. Uni Telegram orqali sinab ko'ring!");
 }
 
 // Faqat oddiy xabarlar (text) kelganda ishlash
@@ -55,8 +46,9 @@ if (isset($update->message)) {
     }
 }
 
-/*function bot($method,$datas=[]){
-$url = "https://api.telegram.org/bot".API_KEY."/".$method;
+*/
+function bot($method,$datas=[]){
+$url = "https://api.telegram.org/bot".TOKEN."/".$method;
 $ch = curl_init();
 curl_setopt($ch,CURLOPT_URL,$url);
 curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
@@ -71,7 +63,7 @@ return json_decode($res);
 function joinchat($id){
 global $mid;
 $array = array("inline_keyboard");
-$kanallar=file_get_contents("channel.txt");
+$kanallar=null;//file_get_contents("channel.txt");
 if($kanallar == null){
 return true;
 }else{
@@ -111,6 +103,10 @@ return true;
 }}}
 
 $update = json_decode(file_get_contents('php://input'));
+// Agar brauzerdan to'g'ridan-to'g'ri kirilsa, bot ishlamaydi
+if (!$update) {
+    die("Bot muvaffaqiyatli ishlamoqda. Uni Telegram orqali sinab ko'ring!");
+}
 $message = $update->message;
 $cid = $message->chat->id;
 $tx = $message->text;
@@ -133,23 +129,23 @@ $cqid = $update->callback_query->id;
 $callfrid = $update->callback_query->from->id;
 $botname = bot('getme',['bot'])->result->username;
 #-----------------------------
-mkdir("step");
+//mkdir("step");
 #-----------------------------
 
-if(!file_exists("channel.txt")){
+/*if(!file_exists("channel.txt")){
 file_put_contents("channel.txt","");
 }
 if(file_get_contents("obunachi.txt")){
 } else{
 file_put_contents("obunachi.txt", "");
 }
-
-$statistika=file_get_contents("obunachi.txt");
+*/
+$statistika="1";//file_get_contents("obunachi.txt");
 $soat=date("H:i",strtotime("2 hour"));
-$userstep=file_get_contents("step/$fid.txt");
-$kanallar=file_get_contents("channel.txt");
+$userstep="1";//file_get_contents("step/$fid.txt");
+$kanallar=""://file_get_contents("channel.txt");
 
-if(isset($callback)){
+/*if(isset($callback)){
 $get = file_get_contents("obunachi.txt");
 if(mb_stripos($get,$callfrid)==false){
 file_put_contents("obunachi.txt", "$get\n$callfrid");
@@ -170,7 +166,7 @@ bot('sendMessage',[
 'parse_mode'=>"html"
 ]);
 }}
-
+*/
 if($tx=="/start" and joinchat($cid)=="true"){
 bot('sendphoto',[
 'chat_id'=>$cid,
@@ -607,5 +603,5 @@ bot('sendMessage',[
 ]);
 unlink("admin/$cid.txt");
 }
-*/
+
 ?>
