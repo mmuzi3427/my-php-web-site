@@ -65,7 +65,7 @@ if (isset($update->message)) {
     $f_name = htmlspecialchars($user->first_name);
     $l_name = htmlspecialchars($user->last_name ?? ''); // Familiya bo'lmasa xato bermasligi uchun
     
-    $start_text = "Assalomu aleykum hurmatli {$f_name}! Xojiakbar blogs botga xush kelibsiz. \n\nMarhamat oʻzingizga kerakli boʻlimni tanlang! 👇";
+    $start_text = "<emoji id=\"5431407769846575322\">🤍</emoji>Assalomu aleykum hurmatli {$f_name}! Xojiakbar blogs botga xush kelibsiz. \n\nMarhamat oʻzingizga kerakli boʻlimni tanlang! 👇";
 
     if ($tx == "/start") {
         bot('sendMessage', [
