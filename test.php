@@ -163,6 +163,53 @@ if (isset($update->callback_query)) {
     $api = json_decode($api_response, true);
 
     // Xatolikni tekshirishni osonlashtiramiz va status kodini tekshiramiz
+    if (mb_stripos($data, "time=") !== false) {
+    $ex = explode("=", $data);
+    $region = isset($ex[1]) ? trim($ex[1]) : '';
+
+    // Telegramdan keladigan callback_query_id ni aniqlash (buni o'zingizning kodingizga moslang)
+    // Agar yuqorida $callback_id aniqlangan bo'lsa, o'shani ishlating
+    $cb_id = isset($callback->id) ? $callback->id : (isset($callback_query['id']) ? $callback_query['id'] : null);
+
+    if (empty($region)) {
+        if ($cb_id) {
+            bot('answerCallbackQuery', [
+                'callback_query_id' => $cb_id,
+                'text' => "⚠️ Shahar nomi aniqlanmadi.",
+                'show_alert' => true
+            ]);
+        }
+        exit;
+    }
+
+    // Aladhan API url
+    $api_url = "https://api.aladhan.com/v1/timingsByCity?city=" . urlencode($region) . "&country=Uzbekistan&method=3";
+    
+    // cURL muammoli bo'lgani uchun file_get_contents orqali so'rov yuboramiz
+    $options = [
+        "http" => [
+            "header" => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\n",
+            "method" => "GET",
+            "timeout" => 10,
+            "ignore_errors" => true // API xato bersa ham javobni o'qish uchun
+        ],
+        "ssl" => [
+            "verify_peer" => false,
+            "verify_peer_name" => false,
+        ]
+    ];
+    
+    $context = stream_context_create($options);
+    $api_response = @file_get_contents($api_url, false, $context);
+
+    // Agar baribir bo'sh qaytsa, muqobil HTTP url ni sinab ko'ramiz (ba'zan SSL muammo bo'ladi)
+    if (!$api_response) {
+        $api_url_http = "http://api.aladhan.com/v1/timingsByCity?city=" . urlencode($region) . "&country=Uzbekistan&method=3";
+        $api_response = @file_get_contents($api_url_http, false, $context);
+    }
+
+    $api = json_decode($api_response, true);
+
     if (isset($api['code']) && $api['code'] == 200) {
         $timings = $api['data']['timings'];
         $date_info = $api['data']['date'];
@@ -214,23 +261,19 @@ if (isset($update->callback_query)) {
             ])
         ]);
     } else {
-        // Xato aniq nimaligini bilish uchun alert xabarini o'zgartiramiz
-        $error_msg = "⚠️ Ma'lumot olishda xatolik.";
-        if (!empty($curl_error)) {
-            $error_msg .= " (cURL Error: " . $curl_error . ")";
-        } elseif (isset($api['data'])) {
-            $error_msg .= " (API Error: " . $api['data'] . ")";
-        } else {
-            $error_msg .= " (Status: " . ($api['code'] ?? 'Unknown') . ")";
+        // Agar javob baribir bo'sh bo'lsa yoki API xato bersa
+        $status = isset($api['code']) ? $api['code'] : 'Server bloklangan (Bo\'sh javob)';
+        
+        if ($cb_id) {
+            bot('answerCallbackQuery', [
+                'callback_query_id' => $cb_id,
+                'text' => "⚠️ Xatolik yuz berdi. (Status: $status)",
+                'show_alert' => true
+            ]);
         }
-
-        bot('answerCallbackQuery', [
-            'callback_query_id' => $callback->id,
-            'text' => $error_msg,
-            'show_alert' => true
-        ]);
     }
 }
+
 
 
 }
