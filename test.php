@@ -31,8 +31,9 @@ if (!$update) {
 // Viloyatlar ro'yxati va tugmalari (Inline Keyboard)
 $main_menu = json_encode([
     'inline_keyboard' => [
-        [['text' => "👀 Veb Saytimiz", 'web_app' => []]],
-        [['text' => "📧 Adminga xabar", 'callback_data' => "message"], ['text' => "✈️ Telegram Kanalimiz", 'url' => "https://t.me/XojiakbarBlogs"]]
+        [['text' => "👀 Veb Saytimiz", 'web_app' => ['url' => "https://my-php-web-site.onrender.com/site-v1"]]],
+        [['text' => "📧 Adminga xabar", 'callback_data' => "message"], ['text' => "✈️ Telegram Kanalimiz", 'url' => "https://t.me/XojiakbarBlogs"]],
+        [['text' => "🕌 Namoz vaqtlari", 'callback_data' => "pr_times"]]
     ]
 ]);
 $regions_keyboard = json_encode([
@@ -66,7 +67,7 @@ if (isset($update->message)) {
             'chat_id' => $cid,
             'text' => $start_text,
             'parse_mode' => 'html',
-            'reply_markup' => $regions_keyboard
+            'reply_markup' => $main_menu
         ]);
     }
 }
@@ -88,6 +89,10 @@ if (isset($update->callback_query)) {
             'caption' => $start_caption,
             'parse_mode' => 'html',
             'reply_markup' => $regions_keyboard
+        ]);
+        bot('deleteMessage', [
+            'chat_id' => $ccid,
+            'message_id' => $cmid,
         ]);
     }
     if ($data == "menyu") {
