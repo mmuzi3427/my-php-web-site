@@ -147,7 +147,7 @@ if (isset($update->callback_query)) {
 
         $api = json_decode($api_response, true);
 
-        if ($api && $api['code'] === 200) {
+        if ($api['code'] == 200) {
             $timings = $api['data']['timings'];
             $date_info = $api['data']['date'];
 
