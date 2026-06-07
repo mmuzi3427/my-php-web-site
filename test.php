@@ -42,7 +42,7 @@ $regions_keyboard = json_encode([
         [['text' => "🕒 Qarshi", 'callback_data' => "time=Qarshi"], ['text' => "🕓 Jizzax", 'callback_data' => "time=Jizzax"]],
         [['text' => "🕔 Navoiy", 'callback_data' => "time=Navoiy"], ['text' => "🕕 Buxoro", 'callback_data' => "time=Buxoro"]],
         [['text' => "🕖 Andijon", 'callback_data' => "time=Andijon"], ['text' => "🕝 Guliston", 'callback_data' => "time=Guliston"]],
-        [['text' => "🕗 Urganch", 'callback_data' => "time=Urganch"], ['text' => "九 Farg'ona", 'callback_data' => "time=Farg'ona"]],
+        [['text' => "🕗 Urganch", 'callback_data' => "time=Urganch"], ['text' => "🕝 Farg'ona", 'callback_data' => "time=Farg'ona"]],
         [['text' => "🕙 Toshkent", 'callback_data' => "time=Toshkent"], ['text' => "🕚 Zarafshon", 'callback_data' => "time=Zarafshon"]],
         [['text' => "🕛 Namangan", 'callback_data' => "time=Namangan"], ['text' => "🕜 Samarqand", 'callback_data' => "time=Samarqand"]],
         [['text' => "🏠 Asosiy menyu", 'callback_data' => "go_main"]]
@@ -115,7 +115,7 @@ if (isset($update->callback_query)) {
             'reply_markup' => $main_menu
         ]);
     }
-    if ($data == "menyu") {
+    if ($data == "menu") {
         bot('deleteMessage', [
             'chat_id' => $ccid,
             'message_id' => $cmid,
