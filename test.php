@@ -145,7 +145,7 @@ if (isset($update->callback_query)) {
     }
 
     // Aladhan API url
-    $api_url = "https://api.aladhan.com/v1/timingsByCity?city=" . urlencode($region) . "&country=Uzbekistan&method=3";
+    $api_url = "https://api.aladhan.com/v1/timingsByCity?city=" . urlencode($region) . "&country=Uzbekistan&&method=2&school=1";
     
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $api_url);
