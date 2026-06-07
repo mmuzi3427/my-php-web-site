@@ -58,9 +58,13 @@ if (isset($update->message)) {
     $message = $update->message;
     $cid = $message->chat->id;
     $tx = $message->text;
-    $user = $message->from;
-    $f_name = $user->first_name;
-    $l_name = $user->last_name ?? '';
+    
+    $user = $message->from; 
+    
+    // Ismda maxsus belgilar (<, >, &) bo'lsa, HTML parse_mode buzilmasligi uchun htmlspecialchars ishlatamiz
+    $f_name = htmlspecialchars($user->first_name);
+    $l_name = htmlspecialchars($user->last_name ?? ''); // Familiya bo'lmasa xato bermasligi uchun
+    
     $start_text = "Assalomu aleykum hurmatli {$f_name}! Xojiakbar blogs botga xush kelibsiz. \n\nMarhamat oʻzingizga kerakli boʻlimni tanlang! 👇";
 
     if ($tx == "/start") {
@@ -72,7 +76,6 @@ if (isset($update->message)) {
         ]);
     }
 }
-
 // --------------------------------------------------------------------
 // 2. TUGMALAR BOSILGANDA (CALLBACK QUERY)
 // --------------------------------------------------------------------
