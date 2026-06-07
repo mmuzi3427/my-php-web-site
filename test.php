@@ -58,9 +58,9 @@ if (isset($update->message)) {
     $message = $update->message;
     $cid = $message->chat->id;
     $tx = $message->text;
-    $user = $message->from_user;
-    $f_name = $user->first_name;
-    $l_name = $user->last_name;
+    $user = $message->from;
+    $f_name = htmlspecialchars($user->first_name);
+    $l_name = htmlspecialchars($user->last_name ?? '');
     $start_text = "Assalomu aleykum hurmatli {$f_name}! Xojiakbar blogs botga xush kelibsiz. \n\nMarhamat oʻzingizga kerakli boʻlimni tanlang! 👇";
 
     if ($tx == "/start") {
@@ -82,9 +82,9 @@ if (isset($update->callback_query)) {
     $ccid = $callback->message->chat->id;
     $cmid = $callback->message->message_id;
     $message = $callback->message;
-    $user = $message->from_user;
-    $f_name = $user->first_name;
-    $l_name = $user->last_name;
+    $user = $message->from;
+    $f_name = htmlspecialchars($user->first_name);
+    $l_name = htmlspecialchars($user->last_name ?? '');
     $main_menu_text = "Assalomu aleykum hurmatli {$f_name}! Xojiakbar blogs botga xush kelibsiz. \n\nMarhamat oʻzingizga kerakli boʻlimni tanlang! 👇";
     // Bosh menyuga qaytish tugmasi bosilganda
     if ($data == "pr_times") {
