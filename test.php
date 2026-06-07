@@ -48,7 +48,7 @@ $regions_keyboard = json_encode([
         [['text' => "🏠 Asosiy menyu", 'callback_data' => "go_main"]]
     ]
 ]);
-$start_text = "Assalomu aleykum hurmatli {$f_name}! Xojiakbar blogs botga xush kelibsiz. \n\nMarhamat oʻzingizga kerakli boʻlimni tanlang! 👇";
+
 $start_caption = "<b>☪ Assalomu aleykum xurmatli foydalanuvchi, botimizga xush kelibsiz!</b>\n\n<i>'Namozni to'kis ado etinglar. Albatta, namoz mo'minlarga vaqtida farz qilingandir'</i>\n<b>Niso surasi, 103-oyat</b>";
 
 // --------------------------------------------------------------------
@@ -61,7 +61,7 @@ if (isset($update->message)) {
     $user = $message->from_user;
     $f_name = $user->first_name;
     $l_name = $user->last_name;
-    
+    $start_text = "Assalomu aleykum hurmatli {$f_name}! Xojiakbar blogs botga xush kelibsiz. \n\nMarhamat oʻzingizga kerakli boʻlimni tanlang! 👇";
 
     if ($tx == "/start") {
         bot('sendMessage', [
@@ -81,7 +81,11 @@ if (isset($update->callback_query)) {
     $data = $callback->data;
     $ccid = $callback->message->chat->id;
     $cmid = $callback->message->message_id;
-
+    $message = $callback->message;
+    $user = $message->from_user;
+    $f_name = $user->first_name;
+    $l_name = $user->last_name;
+    $main_menu_text = "Assalomu aleykum hurmatli {$f_name}! Xojiakbar blogs botga xush kelibsiz. \n\nMarhamat oʻzingizga kerakli boʻlimni tanlang! 👇";
     // Bosh menyuga qaytish tugmasi bosilganda
     if ($data == "pr_times") {
         bot('sendphoto', [
@@ -103,7 +107,7 @@ if (isset($update->callback_query)) {
         ]);
         bot('sendMessage', [
             'chat_id' => $ccid,
-            'text' => $start_text,
+            'text' => $main_menu_text,
             'parse_mode' => 'html',
             'reply_markup' => $main_menu
         ]);
