@@ -45,6 +45,7 @@ $regions_keyboard = json_encode([
         [['text' => "🕗 Urganch", 'callback_data' => "time=Urganch"], ['text' => "九 Farg'ona", 'callback_data' => "time=Farg'ona"]],
         [['text' => "🕙 Toshkent", 'callback_data' => "time=Toshkent"], ['text' => "🕚 Zarafshon", 'callback_data' => "time=Zarafshon"]],
         [['text' => "🕛 Namangan", 'callback_data' => "time=Namangan"], ['text' => "🕜 Samarqand", 'callback_data' => "time=Samarqand"]],
+        [['text' => "🏠 Asosiy menyu", 'callback_data' => "go_main"]]
     ]
 ]);
 $start_text = "Assalomu aleykum hurmatli {$f_name}! Xojiakbar blogs botga xush kelibsiz. \n\nMarhamat oʻzingizga kerakli boʻlimni tanlang! 👇";
@@ -84,7 +85,7 @@ if (isset($update->callback_query)) {
     // Bosh menyuga qaytish tugmasi bosilganda
     if ($data == "pr_times") {
         bot('sendphoto', [
-            'chat_id' => $cid,
+            'chat_id' => $ccid,
             'photo' => "https://t.me/botim1chi/450",
             'caption' => $start_caption,
             'parse_mode' => 'html',
@@ -93,6 +94,18 @@ if (isset($update->callback_query)) {
         bot('deleteMessage', [
             'chat_id' => $ccid,
             'message_id' => $cmid,
+        ]);
+    }
+    if ($data == "go_main") {
+        bot('deleteMessage', [
+            'chat_id' => $ccid,
+            'message_id' => $cmid,
+        ]);
+        bot('sendMessage', [
+            'chat_id' => $ccid,
+            'text' => $start_text,
+            'parse_mode' => 'html',
+            'reply_markup' => $main_menu
         ]);
     }
     if ($data == "menyu") {
@@ -173,7 +186,7 @@ if (isset($update->callback_query)) {
                 'reply_markup' => json_encode([
                     'inline_keyboard' => [
                         [['text' => "🔁 Yangilash", 'callback_data' => "time=$region"]],
-                        [['text' => "🏠 Bosh menyu", 'callback_data' => "menyu"]],
+                        [['text' => "🏠 Asosiy menyu", 'callback_data' => "go_main"], ["text" => "🔙 Orqaga qaytish", 'callback_data' => "menu"]],
                     ]
                 ])
             ]);
@@ -181,7 +194,7 @@ if (isset($update->callback_query)) {
             // Agar Aladhan API-da ham muammo bo'lsa
             bot('answerCallbackQuery', [
                 'callback_query_id' => $callback->id,
-                'text' => "⚠️ Ma'lumot olishda xatolik yuz berdi. Qayta urinib ko'ring.",
+                'text' => "⚠️ Ma'lumot olishda xatolik yuz berdi. Birozdan soʻng qayta urinib ko'ring.",
                 'show_alert' => true
             ]);
         }
