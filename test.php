@@ -131,81 +131,107 @@ if (isset($update->callback_query)) {
 
          // Biror viloyat tanlanganda namoz vaqtini ko'rsatish
     if (mb_stripos($data, "time=") !== false) {
-        $ex = explode("=", $data);
-        $region = $ex[1];
+    $ex = explode("=", $data);
+    // trim() orqali ortiqcha bo'shliqlarni olib tashlaymiz
+    $region = isset($ex[1]) ? trim($ex[1]) : ''; 
 
-        // Aladhan API orqali O'zbekiston shaharlari uchun ma'lumot olish
-        // method=3 -> Butunjahon Musulmon Ligasi (O'zbekistonga eng mos keladigan hisoblash usuli)
-        $api_url = "https://api.aladhan.com/v1/timingsByCity?city=" . urlencode($region) . "&country=Uzbekistan&method=3";
-        
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $api_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        $api_response = curl_exec($ch);
-        curl_close($ch);
-
-        $api = json_decode($api_response, true);
-
-        if ($api['code'] == 200) {
-            $timings = $api['data']['timings'];
-            $date_info = $api['data']['date'];
-
-            // Vaqtlar
-            $tong = $timings['Fajr'];          // Tong otishi
-            $quyosh = $timings['Sunrise'];     // Quyosh chiqishi
-            $peshin = $timings['Dhuhr'];       // Peshin
-            $asr = $timings['Asr'];           // Asr
-            $shom = $timings['Maghrib'];       // Shom (Iftor)
-            $hufton = $timings['Isha'];        // Hufton
-            
-            // Sana va hafta kuni (Inglizchadan o'zbekchaga o'giramiz)
-            $milodiy_sana = $date_info['gregorian']['date']; // DD-MM-YYYY
-            $hafta_kuni_en = $date_info['gregorian']['weekday']['en'];
-            
-            $hafta_kunlari = [
-                'Monday' => 'Dushanba', 'Tuesday' => 'Seshanba', 'Wednesday' => 'Chorshanba',
-                'Thursday' => 'Payshanba', 'Friday' => 'Juma', 'Saturday' => 'Shanba', 'Sunday' => 'Yakshanba'
-            ];
-            $hozir = $hafta_kunlari[$hafta_kuni_en] ?? $hafta_kuni_en;
-
-            // Server soati (O'zbekiston vaqti: UTC+5)
-            $soat = date("H:i", time() + (5 * 3600)); 
-
-            $text_reply = "<b>🕋 Namoz vaqtlari | " . ucfirst($region) . "</b>\n\n" .
-                          "<b>🌅 Tong otishi</b> - $tong\n" .
-                          "<b>🌄 Quyosh chiqishi</b> - $quyosh\n" .
-                          "<b>☀️ Peshin vaqti</b> - $peshin\n" .
-                          "<b>🌞 Asr vaqti</b> - $asr\n" .
-                          "<b>🌜 Shom vaqti</b> - $shom\n" .
-                          "<b>🌕 Hufton vaqti</b> - $hufton\n\n" .
-                          "<b>$hozir | $milodiy_sana | Soat: $soat</b>";
-
-            bot('deleteMessage', [
-                'chat_id' => $ccid,
-                'message_id' => $cmid,
-            ]);
-
-            bot('sendMessage', [
-                'chat_id' => $ccid,
-                'text' => $text_reply,
-                'parse_mode' => 'html',
-                'reply_markup' => json_encode([
-                    'inline_keyboard' => [
-                        [['text' => "🔁 Yangilash", 'callback_data' => "time=$region"]],
-                        [['text' => "🏠 Asosiy menyu", 'callback_data' => "go_main"], ["text" => "🔙 Orqaga qaytish", 'callback_data' => "menu"]],
-                    ]
-                ])
-            ]);
-        } else {
-            // Agar Aladhan API-da ham muammo bo'lsa
-            bot('answerCallbackQuery', [
-                'callback_query_id' => $callback->id,
-                'text' => "⚠️ Ma'lumot olishda xatolik yuz berdi. Birozdan soʻng qayta urinib ko'ring.",
-                'show_alert' => true
-            ]);
-        }
+    if (empty($region)) {
+        bot('answerCallbackQuery', [
+            'callback_query_id' => $callback->id,
+            'text' => "⚠️ Shahar nomi aniqlanmadi.",
+            'show_alert' => true
+        ]);
+        exit;
     }
+
+    // Aladhan API url
+    $api_url = "https://api.aladhan.com/v1/timingsByCity?city=" . urlencode($region) . "&country=Uzbekistan&method=3";
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $api_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false); // SSL tekshiruvini to'liq o'chirish
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // API qotib qolsa bot o'lib qolmasligi uchun
+    // Brauzer simulyatsiyasi (bloklanishni oldini oladi)
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'); 
+    
+    $api_response = curl_exec($ch);
+    $curl_error = curl_error($ch); // Agar cURL xato bersa ushlab olamiz
+    curl_close($ch);
+
+    $api = json_decode($api_response, true);
+
+    // Xatolikni tekshirishni osonlashtiramiz va status kodini tekshiramiz
+    if (isset($api['code']) && $api['code'] == 200) {
+        $timings = $api['data']['timings'];
+        $date_info = $api['data']['date'];
+
+        // Vaqtlar
+        $tong = $timings['Fajr'];
+        $quyosh = $timings['Sunrise'];
+        $peshin = $timings['Dhuhr'];
+        $asr = $timings['Asr'];
+        $shom = $timings['Maghrib'];
+        $hufton = $timings['Isha'];
+        
+        // Sana va hafta kuni
+        $milodiy_sana = $date_info['gregorian']['date'];
+        $hafta_kuni_en = $date_info['gregorian']['weekday']['en'];
+        
+        $hafta_kunlari = [
+            'Monday' => 'Dushanba', 'Tuesday' => 'Seshanba', 'Wednesday' => 'Chorshanba',
+            'Thursday' => 'Payshanba', 'Friday' => 'Juma', 'Saturday' => 'Shanba', 'Sunday' => 'Yakshanba'
+        ];
+        $hozir = $hafta_kunlari[$hafta_kuni_en] ?? $hafta_kuni_en;
+
+        // Server soati
+        $soat = date("H:i", time() + (5 * 3600)); 
+
+        $text_reply = "<b>🕋 Namoz vaqtlari | " . ucfirst($region) . "</b>\n\n" .
+                      "<b>🌅 Tong otishi</b> - $tong\n" .
+                      "<b>🌄 Quyosh chiqishi</b> - $quyosh\n" .
+                      "<b>☀️ Peshin vaqti</b> - $peshin\n" .
+                      "<b>🌞 Asr vaqti</b> - $asr\n" .
+                      "<b>🌜 Shom vaqti</b> - $shom\n" .
+                      "<b>🌕 Hufton vaqti</b> - $hufton\n\n" .
+                      "<b>$hozir | $milodiy_sana | Soat: $soat</b>";
+
+        bot('deleteMessage', [
+            'chat_id' => $ccid,
+            'message_id' => $cmid,
+        ]);
+
+        bot('sendMessage', [
+            'chat_id' => $ccid,
+            'text' => $text_reply,
+            'parse_mode' => 'html',
+            'reply_markup' => json_encode([
+                'inline_keyboard' => [
+                    [['text' => "🔁 Yangilash", 'callback_data' => "time=$region"]],
+                    [['text' => "🏠 Asosiy menyu", 'callback_data' => "go_main"], ["text" => "🔙 Orqaga qaytish", 'callback_data' => "menu"]],
+                ]
+            ])
+        ]);
+    } else {
+        // Xato aniq nimaligini bilish uchun alert xabarini o'zgartiramiz
+        $error_msg = "⚠️ Ma'lumot olishda xatolik.";
+        if (!empty($curl_error)) {
+            $error_msg .= " (cURL Error: " . $curl_error . ")";
+        } elseif (isset($api['data'])) {
+            $error_msg .= " (API Error: " . $api['data'] . ")";
+        } else {
+            $error_msg .= " (Status: " . ($api['code'] ?? 'Unknown') . ")";
+        }
+
+        bot('answerCallbackQuery', [
+            'callback_query_id' => $callback->id,
+            'text' => $error_msg,
+            'show_alert' => true
+        ]);
+    }
+}
+
 
 }
 ?>
