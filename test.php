@@ -29,6 +29,12 @@ if (!$update) {
 }
 
 // Viloyatlar ro'yxati va tugmalari (Inline Keyboard)
+$main_menu = json_encode([
+    'inline_keyboard' => [
+        [['text' => "👀 Veb Saytimiz", 'web_app' => []]],
+        [['text' => "📧 Adminga xabar", 'callback_data' => "message"], ['text' => "✈️ Telegram Kanalimiz", 'url' => "https://t.me/XojiakbarBlogs"]]
+    ]
+]);
 $regions_keyboard = json_encode([
     'inline_keyboard' => [
         [['text' => "🕐 Xiva", 'callback_data' => "time=Xiva"], ['text' => "🕑 Nukus", 'callback_data' => "time=Nukus"]],
@@ -40,8 +46,8 @@ $regions_keyboard = json_encode([
         [['text' => "🕛 Namangan", 'callback_data' => "time=Namangan"], ['text' => "🕜 Samarqand", 'callback_data' => "time=Samarqand"]],
     ]
 ]);
-
-$start_caption = "<b>☪ Assalomu alaykum xurmatli foydalanuvchi, botimizga xush kelibsiz!</b>\n\n<i>'Namozni to'kis ado etinglar. Albatta, namoz mo'minlarga vaqtida farz qilingandir'</i>\n<b>Niso surasi, 103-oyat</b>";
+$start_text = "Assalomu aleykum hurmatli {$f_name}! Xojiakbar blogs botga xush kelibsiz. \n\nMarhamat oʻzingizga kerakli boʻlimni tanlang! 👇";
+$start_caption = "<b>☪ Assalomu aleykum xurmatli foydalanuvchi, botimizga xush kelibsiz!</b>\n\n<i>'Namozni to'kis ado etinglar. Albatta, namoz mo'minlarga vaqtida farz qilingandir'</i>\n<b>Niso surasi, 103-oyat</b>";
 
 // --------------------------------------------------------------------
 // 1. CHAT XABARLARINI QABUL QILISH (TEXT)
@@ -50,12 +56,15 @@ if (isset($update->message)) {
     $message = $update->message;
     $cid = $message->chat->id;
     $tx = $message->text;
+    $user = $message->from_user;
+    $f_name = $user->first_name;
+    $l_name = $user->last_name;
+    
 
     if ($tx == "/start") {
-        bot('sendphoto', [
+        bot('sendMessage', [
             'chat_id' => $cid,
-            'photo' => "https://t.me/botim1chi/450",
-            'caption' => $start_caption,
+            'text' => $start_text,
             'parse_mode' => 'html',
             'reply_markup' => $regions_keyboard
         ]);
@@ -72,6 +81,15 @@ if (isset($update->callback_query)) {
     $cmid = $callback->message->message_id;
 
     // Bosh menyuga qaytish tugmasi bosilganda
+    if ($data == "pr_times") {
+        bot('sendphoto', [
+            'chat_id' => $cid,
+            'photo' => "https://t.me/botim1chi/450",
+            'caption' => $start_caption,
+            'parse_mode' => 'html',
+            'reply_markup' => $regions_keyboard
+        ]);
+    }
     if ($data == "menyu") {
         bot('deleteMessage', [
             'chat_id' => $ccid,
