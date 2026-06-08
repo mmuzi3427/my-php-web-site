@@ -40,9 +40,9 @@ $regions_keyboard = json_encode([
     'inline_keyboard' => [
         [['text' => "🕐 Xiva", 'callback_data' => "time=Xiva"], ['text' => "🕑 Nukus", 'callback_data' => "time=Nukus"]],
         [['text' => "🕒 Qarshi", 'callback_data' => "time=Qarshi"], ['text' => "🕓 Jizzax", 'callback_data' => "time=Jizzax"]],
-        [['text' => "🕔 Navoiy", 'callback_data' => "time=Navaiy"], ['text' => "🕕 Buxoro", 'callback_data' => "time=Buxara"]],
+        [['text' => "🕔 Navoiy", 'callback_data' => "time=Navaiy"], ['text' => "🕕 Buxoro", 'callback_data' => "time=Bukhara"]],
         [['text' => "🕖 Andijon", 'callback_data' => "time=Andijan"], ['text' => "🕝 Guliston", 'callback_data' => "time=Gulistan"]],
-        [['text' => "🕗 Urganch", 'callback_data' => "time=Urganch"], ['text' => "🕝 Farg'ona", 'callback_data' => "time=Farg'ana"]],
+        [['text' => "🕗 Urganch", 'callback_data' => "time=Urganch"], ['text' => "🕝 Farg'ona", 'callback_data' => "time=Fargana"]],
         [['text' => "🕙 Toshkent", 'callback_data' => "time=Tashkent"], ['text' => "🕚 Zarafshon", 'callback_data' => "time=Zharafshan"]],
         [['text' => "🕛 Namangan", 'callback_data' => "time=Namangan"], ['text' => "🕜 Samarqand", 'callback_data' => "time=Samarkand"]],
         [['text' => "🏠 Asosiy menyu", 'callback_data' => "go_main"]]
