@@ -22,7 +22,7 @@ function bot($method, $datas = []) {
 
 // Telegram serveridan kelgan JSON ma'lumotni o'qish
 $update = json_decode(file_get_contents('php://input'));
-
+$sana = date("d-m-Y");
 // Agar brauzerdan kirilsa, kod ishlashni to'xtatadi va xato bermaydi
 if (!$update) {
     die("Bot muvaffaqiyatli ishlamoqda. Uni Telegram orqali sinab ko'ring!");
@@ -183,7 +183,7 @@ if (isset($update->callback_query)) {
     }
 
     // Aladhan API url
-    $api_url = "https://api.aladhan.com/v1/timingsByCity?city=" . urlencode($region) . "&country=Uzbekistan&&method=14&school=1&tune=0,5,0,5,0,4,4,4,19";
+    $api_url = "https://api.aladhan.com/v1/timingsByCity/{$sana}?city=" . urlencode($region) . "&country=Uzbekistan&&method=14&school=1&tune=0,5,0,5,0,4,4,4,19";
     
     // cURL muammoli bo'lgani uchun file_get_contents orqali so'rov yuboramiz
     $options = [
