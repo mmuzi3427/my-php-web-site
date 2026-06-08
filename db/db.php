@@ -7,7 +7,7 @@ $pass = getenv('DB_PASSWORD'); // "CLICK_TO_REVEAL_PASSWORD" ustiga bosib olasiz
 
 // Aiven xavfsizlik uchun SSL talab qiladi (SSL mode: REQUIRED)
 $options = [
-    PDO::MYSQL_ATTR_SSL_CA => true, 
+    PDO::MYSQL_ATTR_SSL_CA => false, 
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ];
