@@ -38,13 +38,13 @@ $main_menu = json_encode([
 ]);
 $regions_keyboard = json_encode([
     'inline_keyboard' => [
-        [['text' => "🕐 Xiva", 'callback_data' => "time=Xiva"], ['text' => "🕑 Nukus", 'callback_data' => "time=Nukus"]],
-        [['text' => "🕒 Qarshi", 'callback_data' => "time=Qarshi"], ['text' => "🕓 Jizzax", 'callback_data' => "time=Jizzax"]],
-        [['text' => "🕔 Navoiy", 'callback_data' => "time=Navaiy"], ['text' => "🕕 Buxoro", 'callback_data' => "time=Bukhara"]],
-        [['text' => "🕖 Andijon", 'callback_data' => "time=Andijan"], ['text' => "🕝 Guliston", 'callback_data' => "time=Gulistan"]],
-        [['text' => "🕗 Urganch", 'callback_data' => "time=Urganch"], ['text' => "🕝 Farg'ona", 'callback_data' => "time=Fargana"]],
-        [['text' => "🕙 Toshkent", 'callback_data' => "time=Tashkent"], ['text' => "🕚 Zarafshon", 'callback_data' => "time=Zharafshan"]],
-        [['text' => "🕛 Namangan", 'callback_data' => "time=Namangan"], ['text' => "🕜 Samarqand", 'callback_data' => "time=Samarkand"]],
+        [['text' => "🕐 Xiva", 'callback_data' => "time=Xiva=Xiva"], ['text' => "🕑 Nukus", 'callback_data' => "time=Nukus=Nukus"]],
+        [['text' => "🕒 Qarshi", 'callback_data' => "time=Qarshi=Qarshi"], ['text' => "🕓 Jizzax", 'callback_data' => "time=Jizzax=Jizzax"]],
+        [['text' => "🕔 Navoiy", 'callback_data' => "time=Navaiy=Navoiy"], ['text' => "🕕 Buxoro", 'callback_data' => "time=Bukhara=Buxoro"]],
+        [['text' => "🕖 Andijon", 'callback_data' => "time=Andijan=Andijon"], ['text' => "🕝 Guliston", 'callback_data' => "time=Gulistan=Guliston"]],
+        [['text' => "🕗 Urganch", 'callback_data' => "time=Urganch=Urganch"], ['text' => "🕝 Farg'ona", 'callback_data' => "time=Fargana=Fargʻona"]],
+        [['text' => "🕙 Toshkent", 'callback_data' => "time=Tashkent=Toshkent"], ['text' => "🕚 Zarafshon", 'callback_data' => "time=Zharafshan=Zarafshon"]],
+        [['text' => "🕛 Namangan", 'callback_data' => "time=Namangan=Namangan"], ['text' => "🕜 Samarqand", 'callback_data' => "time=Samarkand=Samarqand"]],
         [['text' => "🏠 Asosiy menyu", 'callback_data' => "go_main"]]
     ]
 ]);
@@ -166,11 +166,12 @@ if (isset($update->callback_query)) {
     if (mb_stripos($data, "time=") !== false) {
     $ex = explode("=", $data);
     $region = isset($ex[1]) ? trim($ex[1]) : '';
+    $regionuz = isset($ex[2]) ? trim($ex[2]) : 'Mavjut emas';
 
     // Telegramdan keladigan callback_query_id ni aniqlash (buni o'zingizning kodingizga moslang)
     // Agar yuqorida $callback_id aniqlangan bo'lsa, o'shani ishlating
     $cb_id = isset($callback->id) ? $callback->id : (isset($callback_query['id']) ? $callback_query['id'] : null);
-
+   
     if (empty($region)) {
         if ($cb_id) {
             bot('answerCallbackQuery', [
@@ -235,7 +236,7 @@ if (isset($update->callback_query)) {
         // Server soati
         $soat = date("H:i", time() + (5 * 3600)); 
 
-        $text_reply = "<b>🕋 Namoz vaqtlari | " . ucfirst($region) . "</b>\n\n" .
+        $text_reply = "<b>🕋 Namoz vaqtlari | " . ucfirst($regionuz) . "</b>\n\n" .
                       "<b>🌅 Tong otishi</b> - $tong\n" .
                       "<b>🌄 Quyosh chiqishi</b> - $quyosh\n" .
                       "<b>☀️ Peshin vaqti</b> - $peshin\n" .
