@@ -256,7 +256,7 @@ if (isset($update->callback_query)) {
             'parse_mode' => 'html',
             'reply_markup' => json_encode([
                 'inline_keyboard' => [
-                    [['text' => "🔁 Yangilash", 'callback_data' => "time=$region"]],
+                    [['text' => "🔁 Yangilash", 'callback_data' => "time=$region=$regionuz"]],
                     [['text' => "🏠 Asosiy menyu", 'callback_data' => "go_main"], ["text" => "🔙 Orqaga qaytish", 'callback_data' => "menu"]],
                 ]
             ])
