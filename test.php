@@ -226,7 +226,7 @@ if (isset($update->callback_query)) {
         // Sana va hafta kuni
         $milodiy_sana = $date_info['gregorian']['date'];
         $hafta_kuni_en = $date_info['gregorian']['weekday']['en'];
-        
+        $hijriy_sana = str_replace("-", ".", $hijriy_sana);
         $hafta_kunlari = [
             'Monday' => 'Dushanba', 'Tuesday' => 'Seshanba', 'Wednesday' => 'Chorshanba',
             'Thursday' => 'Payshanba', 'Friday' => 'Juma', 'Saturday' => 'Shanba', 'Sunday' => 'Yakshanba'
