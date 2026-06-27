@@ -4,7 +4,7 @@
 // ==========================================
 define('API_KEY', getenv('SIZNING_BOT_TOKENINGIZ'));
 define('ADMIN_ID', getenv('SIZNING_ID_RAQAMINGIZ'));
-define('BASE_CHANNEL_ID', '-1001234567890'); // Maxfiy kanal ID si
+define('BASE_CHANNEL_ID', '-1004425933558'); // Maxfiy kanal ID si
 error_reporting(0);
 // MySQL bazaga ulanish ma'lumotlari
 $db_host = getenv('myhost');
