@@ -128,6 +128,66 @@ if (isset($update->message)) {
                 'reply_markup' => $admin_keyboard
             ]);
         }
+                // --- START XABARINI SOZLASH BO'LIMI ---
+        if ($text == "📝 Start xabarini sozlash") {
+            // Admin holatini 'set_start_text' ga o'zgartiramiz
+            $pdo->prepare("UPDATE users SET step = 'set_start_text' WHERE chat_id = ?")->execute([$chat_id]);
+            bot('sendMessage', [
+                'chat_id' => $chat_id,
+                'text' => "Yangi start xabarini yuboring (Masalan: 🎬 Botimizga xush kelibsiz!):",
+                'reply_markup' => json_encode([
+                    'resize_keyboard' => true,
+                    'keyboard' => [[['text' => "Ortga"]]]
+                ])
+            ]);
+        }
+
+        // Agar admin 'set_start_text' holatida matn yuborsa
+        if ($user_step == 'set_start_text' && $text != "Ortga" && $text != "/panel") {
+            // Bazadagi start xabarini yangilaymiz
+            $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'start_text'")->execute([$text]);
+            // Admin holatini tozalaymiz
+            $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
+            
+            bot('sendMessage', [
+                'chat_id' => $chat_id,
+                'text' => "✅ Start xabari muvaffaqiyatli o'zgartirildi!",
+                'reply_markup' => $admin_keyboard
+            ]);
+        }
+
+        // --- SOZLAMALAR (KONTENTNI HIMOYALASH) BO'LIMI ---
+        if ($text == "⚙️ Sozlamalar") {
+            $pdo->prepare("UPDATE users SET step = 'set_protection' WHERE chat_id = ?")->execute([$chat_id]);
+            $holat = $protect_content ? "YOQILGAN 🟢" : "O'CHIRILGAN 🔴";
+            
+            bot('sendMessage', [
+                'chat_id' => $chat_id,
+                'text' => "⚙️ **Kino himoyasi (Ulashish va saqlashni taqiqlash)**\n\nHozirgi holat: $holat\n\nO'zgartirish uchun pastdagi tugmalardan birini tanlang:",
+                'parse_mode' => 'Markdown',
+                'reply_markup' => json_encode([
+                    'resize_keyboard' => true,
+                    'keyboard' => [
+                        [['text' => "Himoyani yoqish 🟢"], ['text' => "Himoyani o'chirish 🔴"]],
+                        [['text' => "Ortga"]]
+                    ]
+                ])
+            ]);
+        }
+
+        if ($user_step == 'set_protection') {
+            if ($text == "Himoyani yoqish 🟢") {
+                $pdo->prepare("UPDATE settings SET setting_value = '1' WHERE setting_key = 'protect_content'")->execute();
+                $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
+                bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Himoya yoqildi! Endi kinolarni birovga forward qilib bo'lmaydi.", 'reply_markup' => $admin_keyboard]);
+            }
+            if ($text == "Himoyani o'chirish 🔴") {
+                $pdo->prepare("UPDATE settings SET setting_value = '0' WHERE setting_key = 'protect_content'")->execute();
+                $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
+                bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Himoya o'chirildi! Kinolarni bemalol forward qilish mumkin.", 'reply_markup' => $admin_keyboard]);
+            }
+        }
+
 
         // --- STATISTIKA BO'LIMI ---
         if ($text == "📊 Statistika") {
