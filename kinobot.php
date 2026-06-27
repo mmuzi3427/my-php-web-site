@@ -103,11 +103,16 @@ if (isset($update->message)) {
         $admin_keyboard = json_encode([
             'resize_keyboard' => true,
             'keyboard' => [
-                [['text' => "🎬 Kino yuklash"], ['text' => "📊 Statistika"]],
+                [
+                    // Oddiy tugma o'rniga Web App tugmasi
+                    ['text' => "🎬 Kino yuklash / Ko'chirish", 'web_app' => ['url' => 'https://my-php-web-site.onrender.com/admin_app.php']], 
+                    ['text' => "📊 Statistika"]
+                ],
                 [['text' => "⚙️ Sozlamalar"], ['text' => "📢 Kanallar"]],
                 [['text' => "📝 Start xabarini sozlash"]]
             ]
         ]);
+
 
         if ($text == '/panel' || $text == 'Ortga') {
             $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
