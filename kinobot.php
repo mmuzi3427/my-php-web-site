@@ -2,19 +2,20 @@
 // ==========================================
 // ASOSIY SOZLAMALAR
 // ==========================================
-define('API_KEY', 'SIZNING_BOT_TOKENINGIZ');
-define('ADMIN_ID', 'SIZNING_ID_RAQAMINGIZ');
+define('API_KEY', getenv('SIZNING_BOT_TOKENINGIZ'));
+define('ADMIN_ID', getenv('SIZNING_ID_RAQAMINGIZ'));
 define('BASE_CHANNEL_ID', '-1001234567890'); // Maxfiy kanal ID si
-
+error_reporting(0);
 // MySQL bazaga ulanish ma'lumotlari
-$db_host = 'localhost';
-$db_user = 'BAZA_Foydalanuvchisi';
-$db_pass = 'BAZA_Paroli';
-$db_name = 'BAZA_Nomi';
+$db_host = getenv('myhost');
+$db_user = 'kino63773537bot';
+$db_pass = getenv('BAZA_Paroli');
+$db_name = 'kino63773537bot_kino';
 
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
 } catch (PDOException $e) {
     die("Baza xatosi: " . $e->getMessage());
 }
