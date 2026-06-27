@@ -1,22 +1,14 @@
 <?php
-$host = getenv('DB_HOST');
-$port = 23488;
-$db   = 'defaultdb';
-$user = 'avnadmin';
-$pass = getenv('DB_PASSWORD'); // "CLICK_TO_REVEAL_PASSWORD" ustiga bosib olasiz
-$ssl_cert = __DIR__ . '/ca.pem'; 
-// Aiven xavfsizlik uchun SSL talab qiladi (SSL mode: REQUIRED)
-$options = [
-    PDO::MYSQL_ATTR_SSL_CA => $ssl_cert, 
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-];
+$db_host = getenv('myhost');
+$db_user = 'kino63773537bot';
+$db_pass = getenv('BAZA_Paroli');
+$db_name = 'kino63773537bot_kino';
 
 try {
-    $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
-    $pdo = new PDO($dsn, $user, $pass, $options);
+    $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    echo "Ulanish muvaffaqiyatli bajarildi! Baza toʻgʻri ishlayapti.";
-} catch (\PDOException $e) {
-    echo "Ulanishda xatolik: " . $e->getMessage();
+} catch (PDOException $e) {
+    die("Baza xatosi: " . $e->getMessage());
 }
+?>
