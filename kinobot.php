@@ -105,7 +105,8 @@ if (isset($update->message)) {
             'keyboard' => [
                 [
                     // Oddiy tugma o'rniga Web App tugmasi
-                    ['text' => "🎬 Kino yuklash / Ko'chirish", 'web_app' => ['url' => 'https://my-php-web-site.onrender.com/admin_app.php']], 
+                    ['text' => "🎬 Kino Ko'chirish", 'web_app' => ['url' => 'https://my-php-web-site.onrender.com/admin_app.php']], 
+                    ['text' => "🎬 Kino yuklash"],
                     ['text' => "📊 Statistika"]
                 ],
                 [['text' => "⚙️ Sozlamalar"], ['text' => "📢 Kanallar"]],
