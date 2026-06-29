@@ -232,7 +232,7 @@ if (isset($update->message)) {
                 $stmt = $pdo->prepare("INSERT INTO movies (file_code, message_id) VALUES (?, ?)");
                 $stmt->execute([$kino_kodi, $channel_msg_id]);
 
-                $bot_username = bot("getme")->result; // O'zingizning botingiz userini yozing
+                $bot_username = bot("getme")->result->username; // O'zingizning botingiz userini yozing
                 $link = "https://t.me/$bot_username?start=$kino_kodi";
 
                 bot('sendMessage', [
