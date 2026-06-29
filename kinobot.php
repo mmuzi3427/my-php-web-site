@@ -213,7 +213,7 @@ if (isset($update->message)) {
         }
 
         // Agar admin "upload_movie" rejimida bo'lsa va fayl yuborsa
-        if ($user_step == 'upload_movie' && (isset($message->video) || isset($message->document))) {
+        if ($user_step == 'upload_movie') {
             
             // 1. Faylni maxfiy kanalga nusxalash (copyMessage orqali toza qilib yuborish)
             $send = bot('copyMessage', [
@@ -232,7 +232,7 @@ if (isset($update->message)) {
                 $stmt = $pdo->prepare("INSERT INTO movies (file_code, message_id) VALUES (?, ?)");
                 $stmt->execute([$kino_kodi, $channel_msg_id]);
 
-                $bot_username = "SizningBotUsernami_bot"; // O'zingizning botingiz userini yozing
+                $bot_username = bot("getme")->result; // O'zingizning botingiz userini yozing
                 $link = "https://t.me/$bot_username?start=$kino_kodi";
 
                 bot('sendMessage', [
