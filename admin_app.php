@@ -30,7 +30,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
-                        <?php for($i = 1; $i <= 20; $i++): ?>
+                        <?php for($i = 1; $i <= 100; $i++): ?>
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-2 text-sm font-medium text-gray-400"><?= $i ?></td>
                             <td class="px-2 py-1">
