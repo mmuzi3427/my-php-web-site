@@ -56,5 +56,43 @@
         </form>
     </div>
 
+     <script>
+        // Sahifa yuklanganda xotirada saqlangan ma'lumotlarni qayta joyiga tiklash
+        document.addEventListener("DOMContentLoaded", function() {
+            // Parolni tiklash
+            if(localStorage.getItem("admin_password")) {
+                document.getElementById("admin_password").value = localStorage.getItem("admin_password");
+            }
+
+            // Inputlarni tiklash
+            document.querySelectorAll(".save-local").forEach(input => {
+                const key = input.getAttribute("data-id");
+                if (localStorage.getItem(key)) {
+                    input.value = localStorage.getItem(key);
+                }
+
+                // Har safar klaviaturadan nimanidir yozganda real-time saqlab borish
+                input.addEventListener("input", function() {
+                    localStorage.setItem(key, this.value);
+                });
+            });
+
+            // Parol maydonini ham real-time saqlash
+            document.getElementById("admin_password").addEventListener("input", function() {
+                localStorage.setItem("admin_password", this.value);
+            });
+        });
+
+        // Agar admin tugmani bossa va forma muvaffaqiyatli yuborilsa, xotirani tozalash
+        document.getElementById("kinoForm").addEventListener("submit", function() {
+            document.querySelectorAll(".save-local").forEach(input => {
+                const key = input.getAttribute("data-id");
+                localStorage.removeItem(key);
+            });
+            // Xohlasangiz parolni o'chirmaslik mumkin (har safar yoza ko'rmaslik uchun)
+            // localStorage.removeItem("admin_password"); 
+        });
+     </script>
+
 </body>
 </html>
