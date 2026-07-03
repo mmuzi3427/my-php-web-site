@@ -94,7 +94,7 @@
                     if (isNaN(startValue)) return;
 
                     // O'zgargan inputdan pastdagi barcha inputlarni qayta hisoblab to'ldirish
-                    for (let j = currentIndex + 1; j <= 20; j++) {
+                    for (let j = currentIndex + 1; j <= 100; j++) {
                         let nextInput = document.querySelector(`[data-index="${j}"]`);
                         if (nextInput) {
                             startValue++; // Raqamni bittaga oshiramiz
