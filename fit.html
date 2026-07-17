@@ -1,54 +1,54 @@
-
 <!DOCTYPE html>
-<html lang="uz">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Fitness Tracker</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        .stat-card { border: 1px solid #ccc; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+        #map { height: 300px; width: 100%; }
+        .stats { padding: 10px; font-size: 18px; }
     </style>
 </head>
 <body>
-    <h3>Fitness Statistikasi</h3>
-    <div class="stat-card">
-        <p>Masofa: <span id="distance">0</span> km</p>
-        <p>Tezlik: <span id="speed">0</span> km/soat</p>
-        <p>Kaloriya: <span id="calories">0</span> kkal</p>
-    </div>
 
-    <script>
-        let totalDistance = parseFloat(localStorage.getItem('totalDistance')) || 0;
-        let lastCoords = null;
+<div id="map"></div>
+<div class="stats">
+    Masofa: <span id="distance">0</span> km<br>
+    Tezlik: <span id="speed">0</span> km/soat
+</div>
 
-        function updateStats(position) {
-            const { latitude, longitude, speed } = position.coords;
-            
-            if (lastCoords) {
-                const dist = calculateDistance(lastCoords.lat, lastCoords.lng, latitude, longitude);
-                totalDistance += dist;
-                localStorage.setItem('totalDistance', totalDistance);
-            }
-            
-            lastCoords = { lat: latitude, lng: longitude };
-            
-            document.getElementById('distance').innerText = totalDistance.toFixed(2);
-            document.getElementById('speed').innerText = (speed * 3.6 || 0).toFixed(1);
-            document.getElementById('calories').innerText = (totalDistance * 60).toFixed(0); // Taxminiy formula
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    const map = L.map('map').setView([40.6, 72.1], 15); // Boshlang'ich koordinata
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    
+    let marker = L.marker([40.6, 72.1]).addTo(map);
+    let totalDistance = 0;
+    let lastPoint = null;
+
+    function success(pos) {
+        const { latitude, longitude, speed } = pos.coords;
+        
+        // Xaritani yangilash
+        map.setView([latitude, longitude]);
+        marker.setLatLng([latitude, longitude]);
+
+        // Masofani hisoblash
+        if (lastPoint) {
+            let dist = map.distance(lastPoint, [latitude, longitude]) / 1000;
+            totalDistance += dist;
+            document.getElementById('distance').innerText = totalDistance.toFixed(3);
         }
+        
+        lastPoint = [latitude, longitude];
+        document.getElementById('speed').innerText = (speed ? speed * 3.6 : 0).toFixed(1);
+    }
 
-        // Ikki nuqta orasidagi masofani hisoblash (Haversine formulasi)
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; 
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        }
-
-        navigator.geolocation.watchPosition(updateStats, console.error, { enableHighAccuracy: true });
-    </script>
+    navigator.geolocation.watchPosition(success, console.error, { 
+        enableHighAccuracy: true,
+        timeout: 5000 
+    });
+</script>
 </body>
 </html>
