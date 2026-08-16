@@ -26,6 +26,8 @@ function bot($method, $datas = []) {
 $update = json_decode(file_get_contents('php://input'));
 if (isset($update->message)) {
     $message = $update->message;
+    $name = $message->from->first_name;
+    $username = $message->from->user_name;
     $chat_id = $message->chat->id;
     $text = $message->text;
     $message_id = $message->message_id;
@@ -39,6 +41,11 @@ if (isset($update->message)) {
         $pdo->prepare("INSERT INTO users (chat_id) VALUES (?)")->execute([$chat_id]);
         $user_step = 'none';
         $is_blocked = 0;
+        bot('sendMessage', [
+                'chat_id' => ADMIN_ID,
+                'text' => "🆕 Yangi foydalanuvchi:\n👤 Ismi: $name\n📧 Useri: ",
+                'parse_mode' => "html"
+            ]);
     } else {
         $user_step = $user['step'];
         $is_blocked = $user['is_blocked'];
