@@ -27,7 +27,7 @@ $update = json_decode(file_get_contents('php://input'));
 if (isset($update->message)) {
     $message = $update->message;
     $name = $message->from->first_name;
-    $username = $message->from->user_name;
+    $username = $message->from->username;
     $chat_id = $message->chat->id;
     $text = $message->text;
     $message_id = $message->message_id;
@@ -43,7 +43,14 @@ if (isset($update->message)) {
         $is_blocked = 0;
         bot('sendMessage', [
                 'chat_id' => ADMIN_ID,
-                'text' => "🆕 Yangi foydalanuvchi:\n👤 Ismi: $name\n📧 Useri: ",
+                'text' => "🆕 <b>Yangi foydalanuvchi:</b>\n👤 <b>Ismi:</b> $name\n📧 <b>Useri:</b> $username\n🆔 <b>ID raqami:</b> <code>$chat_id</code>",
+                'reply_markup' => json_encode([
+                        'inline_keyboard' => [
+                                [
+                                        ['text' => "👀 Koʻrish", 'url' => "tg://user?id=$chat_id"]
+                                ]
+                        ]
+                ]),
                 'parse_mode' => "html"
             ]);
     } else {
