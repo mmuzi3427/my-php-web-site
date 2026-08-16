@@ -70,7 +70,7 @@ if (isset($update->message)) {
         $settings[$row['setting_key']] = $row['setting_value'];
     }
     $protect_content = ($settings['protect_content'] == '1') ? true : false;
-
+    $settings['start_text'] = str_replace('%firstname%', $name , $settings['start_text'])
     // ==========================================
     // FOYDALANUVCHI QISMI
     // ==========================================
