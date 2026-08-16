@@ -1,6 +1,9 @@
 <?php
+// ================
+// ALPHA coder
+// ================
 // ==========================================
-// ASOSIY SOZLAMALAR
+// ASOSIY SOZLAMALAR 
 // ==========================================
 define('API_KEY', getenv('SIZNING_BOT_TOKENINGIZ'));
 define('ADMIN_ID', getenv('SIZNING_ID_RAQAMINGIZ'));
@@ -71,6 +74,7 @@ if (isset($update->message)) {
     }
     $protect_content = ($settings['protect_content'] == '1') ? true : false;
     $settings['start_text'] = str_replace('%firstname%', $name , $settings['start_text']);
+    
     // ==========================================
     // FOYDALANUVCHI QISMI
     // ==========================================
