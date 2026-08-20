@@ -6,6 +6,7 @@ $main = "active";
 <?php require "includes/header.php" ?>
 <div class="cont">
     <?=$title;?>
+<tg-emoji emoji-id="5368324170671202286">👍</tg-emoji>
 What is Lorem Ipsum?
     <p>
 What is Lorem Ipsum?
