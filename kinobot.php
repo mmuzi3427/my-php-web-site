@@ -22,7 +22,31 @@ function bot($method, $datas = []) {
     $res = curl_exec($ch);
     return json_decode($res);
 }
+function checkSub($user_id, $pdo) {
+    $stmt = $pdo->query("SELECT * FROM channels");
+    $channels = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $not_subscribed = [];
 
+    foreach ($channels as $ch) {
+        $res = bot('getChatMember', [
+            'chat_id' => $ch['channel_id'],
+            'user_id' => $user_id
+        ]);
+
+        $status = $res->result->status ?? 'left';
+
+        // Agar foydalanuvchi kanalda bo'lmasa yoki chiqib ketgan bo'lsa
+        if (in_array($status, ['left', 'kicked'])) {
+            $not_subscribed[] = [
+                'title' => $ch['channel_title'],
+                'url' => $ch['channel_url']
+            ];
+        }
+    }
+
+    return $not_subscribed;
+}
 // ==========================================
 // MA'LUMOTLARNI QABUL QILISH
 // ==========================================
