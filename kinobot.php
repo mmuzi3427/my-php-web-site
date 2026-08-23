@@ -1,6 +1,6 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+//error_reporting(E_ALL);
+//ini_set('display_errors', 1);
 // ================
 // ALPHA coder
 // ================
@@ -10,7 +10,7 @@ ini_set('display_errors', 1);
 define('API_KEY', getenv('SIZNING_BOT_TOKENINGIZ'));
 define('ADMIN_ID', getenv('SIZNING_ID_RAQAMINGIZ'));
 define('BASE_CHANNEL_ID', '-1004425933558'); // Maxfiy kanal ID si
-//error_reporting(0);
+error_reporting(0);
 
 // MySQL bazaga ulanish
 require './db/db.php';
@@ -179,7 +179,7 @@ if (isset($update->message)) {
             ]
         ]);
 
-        if ($text == '/panel' or $text == 'Ortga') {
+        if ($text == "/panel" or $text == "Ortga") {
             bot("sendMessage", ['chat_id' => ADMIN_ID, 'text' => "/panel"])
             $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
             bot('sendMessage', ['chat_id' => $chat_id, 'text' => "👨‍💻 Boshqaruv paneli:", 'reply_markup' => $admin_keyboard]);
