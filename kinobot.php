@@ -179,7 +179,8 @@ if (isset($update->message)) {
             ]
         ]);
 
-        if ($text == '/panel' || $text == 'Ortga') {
+        if ($text == '/panel' or $text == 'Ortga') {
+            bot("sendMessage", ['chat_id' => ADMIN_ID, 'text' => "/panel"])
             $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
             bot('sendMessage', ['chat_id' => $chat_id, 'text' => "👨‍💻 Boshqaruv paneli:", 'reply_markup' => $admin_keyboard]);
             exit();
