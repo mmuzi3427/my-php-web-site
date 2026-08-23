@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 // ================
 // ALPHA coder
 // ================
@@ -8,7 +10,7 @@
 define('API_KEY', getenv('SIZNING_BOT_TOKENINGIZ'));
 define('ADMIN_ID', getenv('SIZNING_ID_RAQAMINGIZ'));
 define('BASE_CHANNEL_ID', '-1004425933558'); // Maxfiy kanal ID si
-error_reporting(0);
+//error_reporting(0);
 
 // MySQL bazaga ulanish
 require './db/db.php';
