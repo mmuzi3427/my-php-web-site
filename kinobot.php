@@ -9,7 +9,8 @@ define('API_KEY', getenv('SIZNING_BOT_TOKENINGIZ'));
 define('ADMIN_ID', getenv('SIZNING_ID_RAQAMINGIZ'));
 define('BASE_CHANNEL_ID', '-1004425933558'); // Maxfiy kanal ID si
 error_reporting(0);
-// MySQL bazaga ulanish ma'lumotlari
+
+// MySQL bazaga ulanish
 require './db/db.php';
 
 // Telegram API so'rov funksiyasi
@@ -22,6 +23,8 @@ function bot($method, $datas = []) {
     $res = curl_exec($ch);
     return json_decode($res);
 }
+
+// Obunani tekshiruvchi funksya
 function checkSub($user_id, $pdo) {
     $stmt = $pdo->query("SELECT * FROM channels");
     $channels = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -47,15 +50,59 @@ function checkSub($user_id, $pdo) {
 
     return $not_subscribed;
 }
+
+// Kino yuborish uchun yordamchi funksya
+function sendMovie($chat_id, $kino_kodi, $pdo) {
+    $stmt = $pdo->prepare("SELECT message_id FROM movies WHERE file_code = ?");
+    $stmt->execute([$kino_kodi]);
+    $movie = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($movie) {
+        bot('copyMessage', [
+            'chat_id' => $chat_id,
+            'from_chat_id' => BASE_CHANNEL_ID,
+            'message_id' => $movie['message_id']
+        ]);
+    } else {
+        bot('sendMessage', ['chat_id' => $chat_id, 'text' => "❌ Kino topilmadi!"]);
+    }
+}
+
 // ==========================================
 // MA'LUMOTLARNI QABUL QILISH
 // ==========================================
 $update = json_decode(file_get_contents('php://input'));
+
+// ------------------------------------------
+// CALLBACK QUERY (Tugmalar bosilishi)
+// ------------------------------------------
 if (isset($update->callback_query)) {
     $cb = $update->callback_query;
     $chat_id = $cb->from->id;
     $data = $cb->data;
     
+    // Admin callbacklari
+    if ($chat_id == ADMIN_ID) {
+        if ($data == "add_channel") {
+            $pdo->prepare("UPDATE users SET step = 'add_chan_id' WHERE chat_id = ?")->execute([ADMIN_ID]);
+            bot('sendMessage', [
+                'chat_id' => ADMIN_ID,
+                'text' => "Kanalning ID raqamini (masalan: `-1001234567890`) yuboring:\n\n*Eslatma: Bot o'sha kanalda admin bo'lishi shart!*",
+                'parse_mode' => 'Markdown'
+            ]);
+            exit();
+        }
+
+        if (strpos($data, 'del_chan_') === 0) {
+            $chan_id = str_replace('del_chan_', '', $data);
+            $pdo->prepare("DELETE FROM channels WHERE id = ?")->execute([$chan_id]);
+            bot('answerCallbackQuery', ['callback_query_id' => $cb->id, 'text' => "✅ Kanal o'chirildi!"]);
+            bot('deleteMessage', ['chat_id' => ADMIN_ID, 'message_id' => $cb->message->message_id]);
+            exit();
+        }
+    }
+
+    // User "Obunani tekshirish" tugmasini bosganda
     if (strpos($data, 'check_sub_') === 0) {
         $kino_kodi = str_replace('check_sub_', '', $data);
         $unsubscribed = checkSub($chat_id, $pdo);
@@ -63,19 +110,10 @@ if (isset($update->callback_query)) {
         if (empty($unsubscribed)) {
             bot('deleteMessage', ['chat_id' => $chat_id, 'message_id' => $cb->message->message_id]);
             
-            // Obuna bo'lingan bo'lsa kinoni yuboramiz
-            $stmt = $pdo->prepare("SELECT message_id FROM movies WHERE file_code = ?");
-            $stmt->execute([$kino_kodi]);
-            $movie = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($movie) {
-                bot('copyMessage', [
-                    'chat_id' => $chat_id,
-                    'from_chat_id' => BASE_CHANNEL_ID,
-                    'message_id' => $movie['message_id']
-                ]);
+            if ($kino_kodi != 'none' && !empty($kino_kodi)) {
+                sendMovie($chat_id, $kino_kodi, $pdo);
             } else {
-                bot('sendMessage', ['chat_id' => $chat_id, 'text' => "❌ Kino topilmadi!"]);
+                bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Obuna tasdiqlandi! Endi kino kodini yuborishingiz mumkin."]);
             }
         } else {
             bot('answerCallbackQuery', [
@@ -87,12 +125,16 @@ if (isset($update->callback_query)) {
     }
     exit();
 }
+
+// ------------------------------------------
+// MESSAGE (Xabarlar kelganda)
+// ------------------------------------------
 if (isset($update->message)) {
     $message = $update->message;
-    $name = $message->from->first_name;
-    $username = $message->from->username;
+    $name = $message->from->first_name ?? '';
+    $username = $message->from->username ?? '';
     $chat_id = $message->chat->id;
-    $text = $message->text;
+    $text = $message->text ?? '';
     $message_id = $message->message_id;
 
     // Foydalanuvchini bazaga qo'shish va holatini (step) aniqlash
@@ -101,87 +143,90 @@ if (isset($update->message)) {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
-        $pdo->prepare("INSERT INTO users (chat_id) VALUES (?)")->execute([$chat_id]);
+        $pdo->prepare("INSERT INTO users (chat_id, step) VALUES (?, 'none')")->execute([$chat_id]);
         $user_step = 'none';
         $is_blocked = 0;
+        
         bot('sendMessage', [
-                'chat_id' => ADMIN_ID,
-                'text' => "🆕 <b>Yangi foydalanuvchi:</b>\n👤 <b>Ismi:</b> $name\n📧 <b>Useri:</b> $username\n🆔 <b>ID raqami:</b> <code>$chat_id</code>",
-                'reply_markup' => json_encode([
-                        'inline_keyboard' => [
-                                [
-                                        ['text' => "👀 Koʻrish", 'url' => "tg://user?id=$chat_id"]
-                                ]
-                        ]
-                ]),
-                'parse_mode' => "html"
-            ]);
+            'chat_id' => ADMIN_ID,
+            'text' => "🆕 <b>Yangi foydalanuvchi:</b>\n👤 <b>Ismi:</b> $name\n📧 <b>Useri:</b> @$username\n🆔 <b>ID raqami:</b> <code>$chat_id</code>",
+            'reply_markup' => json_encode([
+                'inline_keyboard' => [
+                    [['text' => "👀 Koʻrish", 'url' => "tg://user?id=$chat_id"]]
+                ]
+            ]),
+            'parse_mode' => "html"
+        ]);
     } else {
         $user_step = $user['step'];
-        $is_blocked = $user['is_blocked'];
+        $is_blocked = $user['is_blocked'] ?? 0;
     }
 
-    // Agar bloklangan bo'lsa, hech narsa qilmaslik
+    // Bloklangan foydalanuvchini chiqarib yuborish
     if ($is_blocked == 1 && $chat_id != ADMIN_ID) {
         exit();
     }
 
-    // Bot sozlamalarini bazadan olish
+    // Bot sozlamalarini olish
     $settings = [];
     $stmt = $pdo->query("SELECT * FROM settings");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $settings[$row['setting_key']] = $row['setting_value'];
     }
-    $protect_content = ($settings['protect_content'] == '1') ? true : false;
-    $settings['start_text'] = str_replace('%firstname%', $name , $settings['start_text']);
     
+    $start_msg = $settings['start_text'] ?? "🎬 Xush kelibsiz %firstname%! Kino kodi orqali qidiring.";
+    $start_msg = str_replace('%firstname%', htmlspecialchars($name), $start_msg);
+
     // ==========================================
-    // FOYDALANUVCHI QISMI
+    // FOYDALANUVCHI BO'LIMI (Obuna tekshiruv)
+    // ==========================================
+    $unsubscribed = checkSub($chat_id, $pdo);
+
+    if (!empty($unsubscribed) && $chat_id != ADMIN_ID) {
+        $buttons = [];
+        foreach ($unsubscribed as $ch) {
+            $buttons[] = [['text' => "➕ " . $ch['title'], 'url' => $ch['url']]];
+        }
+
+        // Startdagi kino kodini tekshirish uchun ushlab qolamiz
+        $code_param = 'none';
+        if (strpos($text, '/start') === 0) {
+            $explode = explode(' ', $text);
+            if (isset($explode[1])) {
+                $code_param = $explode[1];
+            }
+        } else {
+            $code_param = $text; // Agar shunchaki kod yozgan bo'lsa
+        }
+
+        $buttons[] = [['text' => "🔄 Obunani tekshirish", 'callback_data' => "check_sub_$code_param"]];
+
+        bot('sendMessage', [
+            'chat_id' => $chat_id,
+            'text' => "⚠️ Botdan foydalanish uchun quyidagi kanallarga obuna bo'ling:",
+            'reply_markup' => json_encode(['inline_keyboard' => $buttons])
+        ]);
+        exit();
+    }
+
+    // ==========================================
+    // /START BUYRUG'I VA KINO QIDIRUV
     // ==========================================
     if (strpos($text, '/start') === 0) {
         $explode = explode(' ', $text);
         $kino_kodi = $explode[1] ?? 'none';
 
-        // Obunani tekshirish
-        $unsubscribed = checkSub($chat_id, $pdo);
-
-        if (!empty($unsubscribed) && $chat_id != ADMIN_ID) {
-            $buttons = [];
-            foreach ($unsubscribed as $ch) {
-                $buttons[] = [['text' => "➕ " . $ch['title'], 'url' => $ch['url']]];
-            }
-            // Tekshirish tugmasi
-            $buttons[] = [['text' => "🔄 Obunani tekshirish", 'callback_data' => "check_sub_$kino_kodi"]];
-
-            bot('sendMessage', [
-                'chat_id' => $chat_id,
-                'text' => "⚠️ Botdan foydalanish uchun quyidagi kanallarga obuna bo'ling:",
-                'reply_markup' => json_encode(['inline_keyboard' => $buttons])
-            ]);
-            exit();
-        }
-
-        // Obuna bo'lgan bo'lsa yoki start oddiy bo'lsa
         if ($kino_kodi == 'none') {
-            bot('sendMessage', ['chat_id' => $chat_id, 'text' => "🎬 Xush kelibsiz! Kino kodi orqali qidiring."]);
+            bot('sendMessage', ['chat_id' => $chat_id, 'text' => $start_msg, 'parse_mode' => 'html']);
         } else {
-            $stmt = $pdo->prepare("SELECT message_id FROM movies WHERE file_code = ?");
-            $stmt->execute([$kino_kodi]);
-            $movie = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($movie) {
-                bot('copyMessage', [
-                    'chat_id' => $chat_id,
-                    'from_chat_id' => BASE_CHANNEL_ID,
-                    'message_id' => $movie['message_id']
-                ]);
-            } else {
-                bot('sendMessage', ['chat_id' => $chat_id, 'text' => "❌ Kino topilmadi."]);
-            }
+            sendMovie($chat_id, $kino_kodi, $pdo);
         }
+        exit();
     }
 
-    // ================= ADMIN PANEL =================
+    // ==========================================
+    // ADMIN PANEL BO'LIMI
+    // ==========================================
     if ($chat_id == ADMIN_ID) {
         $admin_keyboard = json_encode([
             'resize_keyboard' => true,
@@ -195,9 +240,10 @@ if (isset($update->message)) {
         if ($text == '/panel' || $text == 'Ortga') {
             $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
             bot('sendMessage', ['chat_id' => $chat_id, 'text' => "👨‍💻 Boshqaruv paneli:", 'reply_markup' => $admin_keyboard]);
+            exit();
         }
 
-        // Kanallar bo'limi
+        // Kanallar ro'yxati
         if ($text == "📢 Kanallar") {
             $stmt = $pdo->query("SELECT * FROM channels");
             $channels = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -218,60 +264,45 @@ if (isset($update->message)) {
                 'parse_mode' => 'Markdown',
                 'reply_markup' => json_encode(['inline_keyboard' => $buttons])
             ]);
+            exit();
+        }
+
+        // Kanal qo'shish step jarayoni
+        if ($user_step == 'add_chan_id' && $text != "Ortga") {
+            $pdo->prepare("UPDATE users SET step = 'add_chan_title' WHERE chat_id = ?")->execute([ADMIN_ID]);
+            file_put_contents("temp_chan_$ADMIN_ID.json", json_encode(['chan_id' => $text]));
+            
+            bot('sendMessage', ['chat_id' => ADMIN_ID, 'text' => "Kanal nomini kiriting (Tugmada ko'rinadigan matn):"]);
+            exit();
+        } 
+        elseif ($user_step == 'add_chan_title' && $text != "Ortga") {
+            $temp = json_decode(file_get_contents("temp_chan_$ADMIN_ID.json"), true);
+            $temp['title'] = $text;
+            file_put_contents("temp_chan_$ADMIN_ID.json", json_encode($temp));
+            
+            $pdo->prepare("UPDATE users SET step = 'add_chan_url' WHERE chat_id = ?")->execute([ADMIN_ID]);
+            bot('sendMessage', ['chat_id' => ADMIN_ID, 'text' => "Kanalga taklif linkini (URL) yuboring (Masalan: `https://t.me/kanal_nomi`):", 'parse_mode' => 'Markdown']);
+            exit();
+        }
+        elseif ($user_step == 'add_chan_url' && $text != "Ortga") {
+            $temp = json_decode(file_get_contents("temp_chan_$ADMIN_ID.json"), true);
+            
+            $stmt = $pdo->prepare("INSERT INTO channels (channel_id, channel_title, channel_url) VALUES (?, ?, ?)");
+            $stmt->execute([$temp['chan_id'], $temp['title'], $text]);
+            
+            @unlink("temp_chan_$ADMIN_ID.json");
+            $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([ADMIN_ID]);
+
+            bot('sendMessage', ['chat_id' => ADMIN_ID, 'text' => "✅ Kanal majburiy obunaga muvaffaqiyatli qo'shildi!"]);
+            exit();
         }
     }
-}
 
-// Callback so'rovlari (Admin uchun kanallarni o'chirish/qo'shish)
-if (isset($update->callback_query) && $update->callback_query->from->id == ADMIN_ID) {
-    $cb = $update->callback_query;
-    $data = $cb->data;
-
-    if ($data == "add_channel") {
-        $pdo->prepare("UPDATE users SET step = 'add_chan_id' WHERE chat_id = ?")->execute([ADMIN_ID]);
-        bot('sendMessage', [
-            'chat_id' => ADMIN_ID,
-            'text' => "Kanalning ID raqamini (masalan: `-1001234567890`) yoki ulanish linkini yuboring:\n\n*Eslatma: Bot o'sha kanalda admin bo'lishi shart!*",
-            'parse_mode' => 'Markdown'
-        ]);
-    }
-
-    if (strpos($data, 'del_chan_') === 0) {
-        $chan_id = str_replace('del_chan_', '', $data);
-        $pdo->prepare("DELETE FROM channels WHERE id = ?")->execute([$chan_id]);
-        bot('answerCallbackQuery', ['callback_query_id' => $cb->id, 'text' => "✅ Kanal o'chirildi!"]);
-        bot('deleteMessage', ['chat_id' => ADMIN_ID, 'message_id' => $cb->message->message_id]);
+    // ==========================================
+    // ODDIY KINO KODI KELGANDA
+    // ==========================================
+    if (!empty($text)) {
+        sendMovie($chat_id, trim($text), $pdo);
     }
 }
-
-// Admin text kiritganda kanal qo'shish bosqichlari
-if (isset($message) && $chat_id == ADMIN_ID) {
-    if ($user_step == 'add_chan_id' && $text != "Ortga") {
-        $pdo->prepare("UPDATE users SET step = 'add_chan_title' WHERE chat_id = ?")->execute([ADMIN_ID]);
-        file_put_contents("temp_chan_$ADMIN_ID.json", json_encode(['chan_id' => $text]));
-        
-        bot('sendMessage', ['chat_id' => ADMIN_ID, 'text' => "Kanal nomini kiriting (Tugmada ko'rinadigan matn):"]);
-    } 
-    elseif ($user_step == 'add_chan_title' && $text != "Ortga") {
-        $temp = json_decode(file_get_contents("temp_chan_$ADMIN_ID.json"), true);
-        $temp['title'] = $text;
-        file_put_contents("temp_chan_$ADMIN_ID.json", json_encode($temp));
-        
-        $pdo->prepare("UPDATE users SET step = 'add_chan_url' WHERE chat_id = ?")->execute([ADMIN_ID]);
-        bot('sendMessage', ['chat_id' => ADMIN_ID, 'text' => "Kanalga taklif linkini (URL) yuboring (Masalan: `https://t.me/kanal_nomi`):", 'parse_mode' => 'Markdown']);
-    }
-    elseif ($user_step == 'add_chan_url' && $text != "Ortga") {
-        $temp = json_decode(file_get_contents("temp_chan_$ADMIN_ID.json"), true);
-        
-        $stmt = $pdo->prepare("INSERT INTO channels (channel_id, channel_title, channel_url) VALUES (?, ?, ?)");
-        $stmt->execute([$temp['chan_id'], $temp['title'], $text]);
-        
-        unlink("temp_chan_$ADMIN_ID.json");
-        $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([ADMIN_ID]);
-
-        bot('sendMessage', ['chat_id' => ADMIN_ID, 'text' => "✅ Kanal majburiy obunaga muvaffaqiyatli qo'shildi!"]);
-    }
-    
-}
-
 ?>
