@@ -17,6 +17,7 @@ function bot($method, $datas = []) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $datas);
     $res = curl_exec($ch);
+    curl_close($ch);
     return json_decode($res);
 }
 
@@ -24,10 +25,12 @@ function bot($method, $datas = []) {
 // MA'LUMOTLARNI QABUL QILISH
 // ==========================================
 $update = json_decode(file_get_contents('php://input'));
+
 if (isset($update->message)) {
     $message = $update->message;
     $chat_id = $message->chat->id;
-    $text = $message->text;
+    // Xabar matni bo'lmasa, xato bermasligi uchun tekshiruv
+    $text = isset($message->text) ? $message->text : '';
     $message_id = $message->message_id;
 
     // Foydalanuvchini bazaga qo'shish va holatini (step) aniqlash
@@ -49,13 +52,15 @@ if (isset($update->message)) {
         exit();
     }
 
-    // Bot sozlamalarini bazadan olish
+    // Bot sozlamalarini bazadan olish va xavfsiz o'zlashtirish
     $settings = [];
     $stmt = $pdo->query("SELECT * FROM settings");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $settings[$row['setting_key']] = $row['setting_value'];
     }
-    $protect_content = ($settings['protect_content'] == '1') ? true : false;
+    
+    $protect_content = (isset($settings['protect_content']) && $settings['protect_content'] == '1') ? true : false;
+    $start_text = isset($settings['start_text']) ? $settings['start_text'] : "🎬 Botimizga xush kelibsiz!";
 
     // ==========================================
     // FOYDALANUVCHI QISMI
@@ -66,7 +71,7 @@ if (isset($update->message)) {
         if (count($explode) == 1) {
             bot('sendMessage', [
                 'chat_id' => $chat_id,
-                'text' => $settings['start_text']
+                'text' => $start_text
             ]);
         } elseif (count($explode) == 2) {
             $kino_kodi = $explode[1];
@@ -104,7 +109,7 @@ if (isset($update->message)) {
             'resize_keyboard' => true,
             'keyboard' => [
                 [['text' => "🎬 Kino yuklash"], ['text' => "📊 Statistika"]],
-                [['text' => "⚙️ Sozlamalar"], ['text' => "📢 Kanallar"]],
+                [['text' => "⚙️ Sozlamalar"]],
                 [['text' => "📝 Start xabarini sozlash"]]
             ]
         ]);
@@ -146,10 +151,9 @@ if (isset($update->message)) {
             ]);
         }
 
-        // Agar admin "upload_movie" rejimida bo'lsa va fayl yuborsa
+        // Agar admin "upload_movie" rejimida bo'lsa va fayl/video yuborsa
         if ($user_step == 'upload_movie' && (isset($message->video) || isset($message->document))) {
             
-            // 1. Faylni maxfiy kanalga nusxalash (copyMessage orqali toza qilib yuborish)
             $send = bot('copyMessage', [
                 'chat_id' => BASE_CHANNEL_ID,
                 'from_chat_id' => $chat_id,
@@ -159,14 +163,13 @@ if (isset($update->message)) {
             if (isset($send->result->message_id)) {
                 $channel_msg_id = $send->result->message_id;
                 
-                // 2. Tasodifiy qisqa kod yaratish (masalan: _A1B2C3D4)
                 $kino_kodi = "_" . strtoupper(substr(md5(time() . rand(1, 10000)), 0, 10));
                 
-                // 3. Bazaga saqlash
                 $stmt = $pdo->prepare("INSERT INTO movies (file_code, message_id) VALUES (?, ?)");
                 $stmt->execute([$kino_kodi, $channel_msg_id]);
 
-                $bot_username = "SizningBotUsernami_bot"; // O'zingizning botingiz userini yozing
+                // O'zingizning botingiz userini yozing (masalan: kino_bot)
+                $bot_username = "BOTINGIZ_USERNAME_SIZ"; 
                 $link = "https://t.me/$bot_username?start=$kino_kodi";
 
                 bot('sendMessage', [
@@ -176,19 +179,17 @@ if (isset($update->message)) {
                     'reply_markup' => $admin_keyboard
                 ]);
                 
-                // Stepni tozalash
                 $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
             } else {
                 bot('sendMessage', [
                     'chat_id' => $chat_id,
-                    'text' => "❌ Faylni maxfiy kanalga yuborishda xatolik yuz berdi. Botingiz kanalga admin ekanligini tekshiring."
+                    'text' => "❌ Faylni maxfiy kanalga yuborishda xatolik yuz berdi. Bot maxfiy kanalga admin ekanligiga ishonch hosil qiling."
                 ]);
             }
         }
         
-                // --- START XABARINI SOZLASH BO'LIMI ---
+        // --- START XABARINI SOZLASH BO'LIMI ---
         if ($text == "📝 Start xabarini sozlash") {
-            // Admin holatini 'set_start_text' ga o'zgartiramiz
             $pdo->prepare("UPDATE users SET step = 'set_start_text' WHERE chat_id = ?")->execute([$chat_id]);
             bot('sendMessage', [
                 'chat_id' => $chat_id,
@@ -200,11 +201,16 @@ if (isset($update->message)) {
             ]);
         }
 
-        // Agar admin 'set_start_text' holatida matn yuborsa
-        if ($user_step == 'set_start_text' && $text != "Ortga" && $text != "/panel") {
-            // Bazadagi start xabarini yangilaymiz
-            $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'start_text'")->execute([$text]);
-            // Admin holatini tozalaymiz
+        if ($user_step == 'set_start_text' && $text != "Ortga" && $text != "/panel" && $text != "") {
+            // Check if key exists first, if not insert it
+            $stmt = $pdo->prepare("SELECT setting_key FROM settings WHERE setting_key = 'start_text'");
+            $stmt->execute();
+            if ($stmt->fetch()) {
+                $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'start_text'")->execute([$text]);
+            } else {
+                $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('start_text', ?)")->execute([$text]);
+            }
+            
             $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
             
             bot('sendMessage', [
@@ -235,17 +241,28 @@ if (isset($update->message)) {
 
         if ($user_step == 'set_protection') {
             if ($text == "Himoyani yoqish 🟢") {
-                $pdo->prepare("UPDATE settings SET setting_value = '1' WHERE setting_key = 'protect_content'")->execute();
+                $stmt = $pdo->prepare("SELECT setting_key FROM settings WHERE setting_key = 'protect_content'");
+                $stmt->execute();
+                if ($stmt->fetch()) {
+                    $pdo->prepare("UPDATE settings SET setting_value = '1' WHERE setting_key = 'protect_content'")->execute();
+                } else {
+                    $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('protect_content', '1')")->execute();
+                }
                 $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
                 bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Himoya yoqildi! Endi kinolarni birovga forward qilib bo'lmaydi.", 'reply_markup' => $admin_keyboard]);
             }
             if ($text == "Himoyani o'chirish 🔴") {
-                $pdo->prepare("UPDATE settings SET setting_value = '0' WHERE setting_key = 'protect_content'")->execute();
+                $stmt = $pdo->prepare("SELECT setting_key FROM settings WHERE setting_key = 'protect_content'");
+                $stmt->execute();
+                if ($stmt->fetch()) {
+                    $pdo->prepare("UPDATE settings SET setting_value = '0' WHERE setting_key = 'protect_content'")->execute();
+                } else {
+                    $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('protect_content', '0')")->execute();
+                }
                 $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
                 bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Himoya o'chirildi! Kinolarni bemalol forward qilish mumkin.", 'reply_markup' => $admin_keyboard]);
             }
         }
-
     }
 }
 ?>
