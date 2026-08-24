@@ -260,6 +260,7 @@ if (isset($update->message)) {
                 'text' => "📊 **Bot statistikasi:**\n\n👥 Foydalanuvchilar: $users_count ta\n🎬 Yuklangan kinolar: $movies_count ta",
                 'parse_mode' => 'Markdown'
             ]);
+            exit();
         }
         
         // --- START XABARINI SOZLASH BO'LIMI ---
@@ -274,6 +275,7 @@ if (isset($update->message)) {
                     'keyboard' => [[['text' => "Ortga"]]]
                 ])
             ]);
+            exit();
         }
 
         // Agar admin 'set_start_text' holatida matn yuborsa
@@ -307,6 +309,7 @@ if (isset($update->message)) {
                     ]
                 ])
             ]);
+            exit();
         }
 
         if ($user_step == 'set_protection') {
@@ -320,6 +323,8 @@ if (isset($update->message)) {
                 $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
                 bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Himoya o'chirildi! Kinolarni bemalol forward qilish mumkin.", 'reply_markup' => $admin_keyboard]);
             }
+            exit();
+            
 }
 
         // Kanallar bo'limi
