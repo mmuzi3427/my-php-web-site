@@ -154,7 +154,7 @@ if (isset($update->message)) {
         $admin_keyboard = json_encode([
             'resize_keyboard' => true,
             'keyboard' => [
-                [['text' => "🎬 Kino yuklash / Ko'chirish", 'web_app' => ['url' => 'https://SIZNING_DOMENINGIZ.uz/admin_app.php']], ['text' => "➕ Chat orqali kino qo'shish"]],
+                [['text' => "➕ Chat orqali kino qo'shish"]],
                 [['text' => "📢 Kanallar"], ['text' => "📊 Statistika"]],
                 [['text' => "⚙️ Sozlamalar"], ['text' => "📝 Start xabarini sozlash"]]
             ]
