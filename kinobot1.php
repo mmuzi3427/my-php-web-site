@@ -53,10 +53,12 @@ function sendMovie($chat_id, $kino_kodi, $pdo) {
     $movie = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($movie) {
+        
         bot('copyMessage', [
             'chat_id' => $chat_id,
             'from_chat_id' => BASE_CHANNEL_ID,
-            'message_id' => $movie['message_id']
+            'message_id' => $movie['message_id'],
+            'protect_content' => $protect_content
         ]);
     } else {
         bot('sendMessage', ['chat_id' => $chat_id, 'text' => "❌ Kino topilmadi!"]);
@@ -413,7 +415,7 @@ if (isset($update->message)) {
     
     $start_msg = $settings['start_text'] ?? "🎬 Xush kelibsiz %firstname%! Kino kodi orqali qidiring.";
     $start_msg = str_replace('%firstname%', htmlspecialchars($name), $start_msg);
-
+    $protect_content = ($settings['protect_content']) ? true : false;
     if (strpos($text, '/start') === 0) {
         $explode = explode(' ', $text);
         $kino_kodi = $explode[1] ?? 'none';
@@ -421,7 +423,7 @@ if (isset($update->message)) {
         if ($kino_kodi == 'none') {
             bot('sendMessage', ['chat_id' => $chat_id, 'text' => $start_msg, 'parse_mode' => 'html']);
         } else {
-            sendMovie($chat_id, $kino_kodi, $pdo);
+            sendMovie($chat_id, $kino_kodi, $protect_content, $pdo);
         }
         exit();
     }
