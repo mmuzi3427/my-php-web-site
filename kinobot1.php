@@ -47,7 +47,7 @@ function checkSub($user_id, $pdo) {
     return $not_subscribed;
 }
 
-function sendMovie($chat_id, $kino_kodi, $pdo) {
+function sendMovie($chat_id, $kino_kodi, $protect_content, $pdo) {
     $stmt = $pdo->prepare("SELECT message_id FROM movies WHERE file_code = ?");
     $stmt->execute([$kino_kodi]);
     $movie = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -135,7 +135,13 @@ if (isset($update->message)) {
     $stmt = $pdo->prepare("SELECT * FROM users WHERE chat_id = ?");
     $stmt->execute([$chat_id]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
+    // Bot sozlamalari va /start
+    $settings = [];
+    $stmt = $pdo->query("SELECT * FROM settings");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $settings[$row['setting_key']] = $row['setting_value'];
+    }
+    $protect_content = ($settings['protect_content']) ? true : false;
     if (!$user) {
         bot('sendMessage', [
             'chat_id' => ADMIN_ID,
@@ -406,16 +412,11 @@ if (isset($update->message)) {
         exit();
     }
 
-    // Bot sozlamalari va /start
-    $settings = [];
-    $stmt = $pdo->query("SELECT * FROM settings");
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $settings[$row['setting_key']] = $row['setting_value'];
-    }
+    
     
     $start_msg = $settings['start_text'] ?? "🎬 Xush kelibsiz %firstname%! Kino kodi orqali qidiring.";
     $start_msg = str_replace('%firstname%', htmlspecialchars($name), $start_msg);
-    $protect_content = ($settings['protect_content']) ? true : false;
+    
     if (strpos($text, '/start') === 0) {
         $explode = explode(' ', $text);
         $kino_kodi = $explode[1] ?? 'none';
