@@ -135,6 +135,14 @@ if (isset($update->message)) {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
+        bot('sendMessage', [
+            'chat_id' => ADMIN_ID,
+            'text' => "🆕 <b>Yangi foydalanuvchi:</b>\n👤 <b>Ismi:</b> $name\n📧 <b>Useri:</b> @$username\n🆔 <b>ID raqami:</b> <code>$chat_id</code>",
+            'reply_markup' => json_encode([
+                'inline_keyboard' => [[['text' => "👀 Koʻrish", 'url' => "tg://user?id=$chat_id"]]]
+            ]),
+            'parse_mode' => "html"
+        ]);
         $pdo->prepare("INSERT INTO users (chat_id, step) VALUES (?, 'none')")->execute([$chat_id]);
         $user_step = 'none';
         $temp_msg_id = null;
@@ -239,6 +247,7 @@ if (isset($update->message)) {
             }
             exit();
         }
+        
 
         // Kanallar bo'limi
         if ($text == "📢 Kanallar") {
