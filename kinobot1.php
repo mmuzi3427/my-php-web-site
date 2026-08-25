@@ -373,6 +373,8 @@ if (isset($update->message)) {
             exit();
         }
         elseif ($user_step == 'add_chan_url' && $text != "Ortga") {
+            $stmt = $pdo->query("SELECT * FROM channels");
+            $channels = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $stmt = $pdo->prepare("INSERT INTO channels (channel_id, channel_title, channel_url) VALUES (?, 'Kanal', ?)");
             $stmt->execute([$temp_msg_id, $text]);
             
