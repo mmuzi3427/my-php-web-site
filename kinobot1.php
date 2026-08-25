@@ -36,7 +36,8 @@ function checkSub($user_id, $pdo) {
 
         $status = $res->result->status ?? 'left';
 
-        if (in_array($status, ['left', 'kicked'])) {
+        // Faqat member, administrator, creator statusidagi foydalanuvchilar obuna bo'lgan hisoblanadi
+        if (!in_array($status, ['member', 'administrator', 'creator'])) {
             $not_subscribed[] = [
                 'title' => $ch['channel_title'],
                 'url' => $ch['channel_url']
@@ -53,7 +54,6 @@ function sendMovie($chat_id, $kino_kodi, $protect_content, $pdo) {
     $movie = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($movie) {
-        
         bot('copyMessage', [
             'chat_id' => $chat_id,
             'from_chat_id' => BASE_CHANNEL_ID,
@@ -69,6 +69,14 @@ function sendMovie($chat_id, $kino_kodi, $protect_content, $pdo) {
 // MA'LUMOTLARNI QABUL QILISH
 // ==========================================
 $update = json_decode(file_get_contents('php://input'));
+
+// Bot sozlamalari
+$settings = [];
+$stmt = $pdo->query("SELECT * FROM settings");
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $settings[$row['setting_key']] = $row['setting_value'];
+}
+$protect_content = !empty($settings['protect_content']) ? true : false;
 
 // ------------------------------------------
 // CALLBACK QUERY
@@ -106,7 +114,7 @@ if (isset($update->callback_query)) {
             bot('deleteMessage', ['chat_id' => $chat_id, 'message_id' => $cb->message->message_id]);
             
             if ($kino_kodi != 'none' && !empty($kino_kodi)) {
-                sendMovie($chat_id, $kino_kodi, $pdo);
+                sendMovie($chat_id, $kino_kodi, $protect_content, $pdo);
             } else {
                 bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Obuna tasdiqlandi! Endi kino kodini yuborishingiz mumkin."]);
             }
@@ -135,13 +143,7 @@ if (isset($update->message)) {
     $stmt = $pdo->prepare("SELECT * FROM users WHERE chat_id = ?");
     $stmt->execute([$chat_id]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    // Bot sozlamalari va /start
-    $settings = [];
-    $stmt = $pdo->query("SELECT * FROM settings");
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $settings[$row['setting_key']] = $row['setting_value'];
-    }
-    $protect_content = ($settings['protect_content']) ? true : false;
+
     if (!$user) {
         bot('sendMessage', [
             'chat_id' => ADMIN_ID,
@@ -176,7 +178,6 @@ if (isset($update->message)) {
             ]
         ]);
 
-        // Ortga qaytish yoki Panel menyusi
         if ($text == '/panel' || $text == 'Ortga') {
             $pdo->prepare("UPDATE users SET step = 'none', temp_msg_id = NULL WHERE chat_id = ?")->execute([$chat_id]);
             bot('sendMessage', [
@@ -187,7 +188,6 @@ if (isset($update->message)) {
             exit();
         }
 
-        // 1-bosqich: Chat orqali kino qo'shish tugmasi bosilishi
         if ($text == "📤 Kino yuklash") {
             $pdo->prepare("UPDATE users SET step = 'send_movie_file' WHERE chat_id = ?")->execute([$chat_id]);
             $cancel_btn = json_encode(['resize_keyboard' => true, 'keyboard' => [[['text' => 'Ortga']]]]);
@@ -199,7 +199,6 @@ if (isset($update->message)) {
             exit();
         }
 
-        // 2-bosqich: Admin videoni yuborganda
         if ($user_step == 'send_movie_file' && (isset($message->video) || isset($message->document))) {
             $forwarded = bot('copyMessage', [
                 'chat_id' => BASE_CHANNEL_ID,
@@ -209,36 +208,29 @@ if (isset($update->message)) {
 
             if (isset($forwarded->result->message_id)) {
                 $base_msg_id = $forwarded->result->message_id;
-                
-                // Maxfiy kanaldagi ID raqamini bazaga saqlaymiz
                 $pdo->prepare("UPDATE users SET step = 'send_movie_code', temp_msg_id = ? WHERE chat_id = ?")
                     ->execute([$base_msg_id, $chat_id]);
                 
                 bot('sendMessage', [
                     'chat_id' => $chat_id, 
-                    'text' => "✅ Video maxfiy kanalga saqlandi!\n\nEndi ushbu kino uchun **Start kodini (payload)** kiriting (masalan: `kino123`):", 
+                    'text' => "✅ Video maxfiy kanalga saqlandi!\n\nEndi ushbu kino uchun **Start kodini** kiriting (masalan: `kino123`):", 
                     'parse_mode' => 'Markdown'
                 ]);
             } else {
                 bot('sendMessage', [
                     'chat_id' => $chat_id, 
-                    'text' => "❌ Videoni maxfiy kanalga yuklashda xatolik! Bot maxfiy kanalda admin ekanligini va BASE_CHANNEL_ID to'g'riligini tekshiring."
+                    'text' => "❌ Videoni maxfiy kanalga yuklashda xatolik! Bot kanalda admin ekanligini va ID to'g'riligini tekshiring."
                 ]);
             }
             exit();
         }
 
-        // 3-bosqich: Admin kino kodini kiritganda
         if ($user_step == 'send_movie_code' && !empty($text) && $text != "Ortga") {
             if ($temp_msg_id) {
-                // Kinoni saqlash
                 $stmt = $pdo->prepare("INSERT INTO movies (message_id, file_code) VALUES (?, ?)");
                 $stmt->execute([$temp_msg_id, $text]);
-
-                // Step va vaqtinchalik ID ni tozalash
                 $pdo->prepare("UPDATE users SET step = 'none', temp_msg_id = NULL WHERE chat_id = ?")->execute([$chat_id]);
 
-                // Natijani xabar qilish va ADMIN PANELNI QAYTARIЅH
                 bot('sendMessage', [
                     'chat_id' => $chat_id, 
                     'text' => "🎉 Kino bazaga muvaffaqiyatli qo'shildi!\n\n🎬 Kino kodi: `$text`", 
@@ -248,14 +240,14 @@ if (isset($update->message)) {
             } else {
                 bot('sendMessage', [
                     'chat_id' => $chat_id, 
-                    'text' => "❌ Xatolik yuz berdi: Video topilmadi. Qaytadan urinib ko'ring.", 
+                    'text' => "❌ Xatolik yuz berdi: Video topilmadi.", 
                     'reply_markup' => $admin_keyboard
                 ]);
                 $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
             }
             exit();
         }
-        // --- STATISTIKA BO'LIMI ---
+
         if ($text == "📊 Statistika") {
             $stmt = $pdo->query("SELECT COUNT(*) as count FROM users");
             $users_count = $stmt->fetch()['count'];
@@ -270,27 +262,19 @@ if (isset($update->message)) {
             ]);
             exit();
         }
-        
-        // --- START XABARINI SOZLASH BO'LIMI ---
+
         if ($text == "📝 Start xabarini sozlash") {
-            // Admin holatini 'set_start_text' ga o'zgartiramiz
             $pdo->prepare("UPDATE users SET step = 'set_start_text' WHERE chat_id = ?")->execute([$chat_id]);
             bot('sendMessage', [
                 'chat_id' => $chat_id,
                 'text' => "Yangi start xabarini yuboring (Masalan: 🎬 Botimizga xush kelibsiz!):",
-                'reply_markup' => json_encode([
-                    'resize_keyboard' => true,
-                    'keyboard' => [[['text' => "Ortga"]]]
-                ])
+                'reply_markup' => json_encode(['resize_keyboard' => true, 'keyboard' => [[['text' => "Ortga"]]]])
             ]);
             exit();
         }
 
-        // Agar admin 'set_start_text' holatida matn yuborsa
         if ($user_step == 'set_start_text' && $text != "Ortga" && $text != "/panel") {
-            // Bazadagi start xabarini yangilaymiz
             $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'start_text'")->execute([$text]);
-            // Admin holatini tozalaymiz
             $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
             
             bot('sendMessage', [
@@ -298,16 +282,16 @@ if (isset($update->message)) {
                 'text' => "✅ Start xabari muvaffaqiyatli o'zgartirildi!",
                 'reply_markup' => $admin_keyboard
             ]);
+            exit();
         }
 
-        // --- SOZLAMALAR (KONTENTNI HIMOYALASH) BO'LIMI ---
         if ($text == "⚙️ Sozlamalar") {
             $pdo->prepare("UPDATE users SET step = 'set_protection' WHERE chat_id = ?")->execute([$chat_id]);
             $holat = $protect_content ? "YOQILGAN 🟢" : "O'CHIRILGAN 🔴";
             
             bot('sendMessage', [
                 'chat_id' => $chat_id,
-                'text' => "⚙️ **Kino himoyasi (Ulashish va saqlashni taqiqlash)**\n\nHozirgi holat: $holat\n\nO'zgartirish uchun pastdagi tugmalardan birini tanlang:",
+                'text' => "⚙️ **Kino himoyasi**\n\nHozirgi holat: $holat\n\nO'zgartirish uchun tugmalardan foydalaning:",
                 'parse_mode' => 'Markdown',
                 'reply_markup' => json_encode([
                     'resize_keyboard' => true,
@@ -324,18 +308,15 @@ if (isset($update->message)) {
             if ($text == "Himoyani yoqish 🟢") {
                 $pdo->prepare("UPDATE settings SET setting_value = '1' WHERE setting_key = 'protect_content'")->execute();
                 $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
-                bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Himoya yoqildi! Endi kinolarni birovga forward qilib bo'lmaydi.", 'reply_markup' => $admin_keyboard]);
-            }
-            if ($text == "Himoyani o'chirish 🔴") {
+                bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Himoya yoqildi!", 'reply_markup' => $admin_keyboard]);
+            } elseif ($text == "Himoyani o'chirish 🔴") {
                 $pdo->prepare("UPDATE settings SET setting_value = '0' WHERE setting_key = 'protect_content'")->execute();
                 $pdo->prepare("UPDATE users SET step = 'none' WHERE chat_id = ?")->execute([$chat_id]);
-                bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Himoya o'chirildi! Kinolarni bemalol forward qilish mumkin.", 'reply_markup' => $admin_keyboard]);
+                bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Himoya o'chirildi!", 'reply_markup' => $admin_keyboard]);
             }
             exit();
-            
-}
+        }
 
-        // Kanallar bo'limi
         if ($text == "📢 Kanallar") {
             $stmt = $pdo->query("SELECT * FROM channels");
             $channels = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -359,24 +340,25 @@ if (isset($update->message)) {
             exit();
         }
 
-        // Kanal qo'shish jarayonlari
+        // Kanal qo'shish bosqichlari
         if ($user_step == 'add_chan_id' && $text != "Ortga") {
             $pdo->prepare("UPDATE users SET step = 'add_chan_title', temp_msg_id = ? WHERE chat_id = ?")->execute([$text, $chat_id]);
             bot('sendMessage', ['chat_id' => $chat_id, 'text' => "Kanal nomini kiriting (Tugmada ko'rinadigan matn):"]);
             exit();
         } 
         elseif ($user_step == 'add_chan_title' && $text != "Ortga") {
-            $pdo->prepare("UPDATE users SET step = 'add_chan_url' WHERE chat_id = ?")->execute([$chat_id]);
-            // Vaqtinchalik sarlavhani saqlash
-            $pdo->prepare("UPDATE channels SET channel_title = ? WHERE channel_id = ?")->execute([$text, $temp_msg_id]);
+            // Sarlavhani saqlaymiz va URL so'raymiz (TEMP text qilib user step o'zgaradi)
+            $pdo->prepare("UPDATE users SET step = 'add_chan_url', temp_msg_id = ? WHERE chat_id = ?")->execute([$temp_msg_id . "|||" . $text, $chat_id]);
             bot('sendMessage', ['chat_id' => $chat_id, 'text' => "Kanalga taklif linkini (URL) yuboring (Masalan: `https://t.me/kanal_nomi`):", 'parse_mode' => 'Markdown']);
             exit();
         }
         elseif ($user_step == 'add_chan_url' && $text != "Ortga") {
-            $stmt = $pdo->query("SELECT * FROM channels");
-            $channels = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $stmt = $pdo->prepare("INSERT INTO channels (channel_id, channel_title, channel_url) VALUES (?, 'Kanal', ?)");
-            $stmt->execute([$temp_msg_id, $text]);
+            $data_parts = explode("|||", $temp_msg_id);
+            $c_id = $data_parts[0];
+            $c_title = $data_parts[1] ?? 'Kanal';
+
+            $stmt = $pdo->prepare("INSERT INTO channels (channel_id, channel_title, channel_url) VALUES (?, ?, ?)");
+            $stmt->execute([$c_id, $c_title, $text]);
             
             $pdo->prepare("UPDATE users SET step = 'none', temp_msg_id = NULL WHERE chat_id = ?")->execute([$chat_id]);
 
@@ -414,8 +396,6 @@ if (isset($update->message)) {
         exit();
     }
 
-    
-    
     $start_msg = $settings['start_text'] ?? "🎬 Xush kelibsiz %firstname%! Kino kodi orqali qidiring.";
     $start_msg = str_replace('%firstname%', htmlspecialchars($name), $start_msg);
     
@@ -433,7 +413,7 @@ if (isset($update->message)) {
 
     // Oddiy kino kodi yozilganda
     if (!empty($text)) {
-        sendMovie($chat_id, $text, $pdo);
+        sendMovie($chat_id, $text, $protect_content, $pdo);
     }
 }
 ?>
