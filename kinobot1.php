@@ -7,6 +7,7 @@
 // ==========================================
 define('API_KEY', getenv('SIZNING_BOT_TOKENINGIZ'));
 define('ADMIN_ID', getenv('SIZNING_ID_RAQAMINGIZ'));
+define('URL', getenv('URL'));
 define('BASE_CHANNEL_ID', '-1004425933558'); // Maxfiy kanal ID si
 error_reporting(0);
 
@@ -231,7 +232,7 @@ if (isset($update->message)) {
         $admin_keyboard = json_encode([
             'resize_keyboard' => true,
             'keyboard' => [
-                [['text' => "🎬 Kino yuklash / Ko'chirish", 'web_app' => ['url' => './admin_app.php']], ['text' => "📊 Statistika"]],
+                [['text' => "🎬 Kino yuklash / Ko'chirish", 'web_app' => ['url' => URL . '/admin_app.php']], ['text' => "📊 Statistika"]],
                 [['text' => "📢 Kanallar"], ['text' => "⚙️ Sozlamalar"]],
                 [['text' => "📝 Start xabarini sozlash"]]
             ]
