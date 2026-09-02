@@ -232,7 +232,7 @@ if (isset($update->message)) {
         $admin_keyboard = json_encode([
             'resize_keyboard' => true,
             'keyboard' => [
-                [['text' => "🎬 Kino yuklash / Ko'chirish", 'web_app' => ['url' => URL . '/admin_app.php']], ['text' => "📊 Statistika"]],
+                [['text' => "🎬 Kino yuklash / Ko'chirish", 'web_app' => ['url' => URL]], ['text' => "📊 Statistika"]],
                 [['text' => "📢 Kanallar"], ['text' => "⚙️ Sozlamalar"]],
                 [['text' => "📝 Start xabarini sozlash"]]
             ]
