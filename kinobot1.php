@@ -57,12 +57,21 @@ function sendMovie($chat_id, $kino_kodi, $pdo) {
     $stmt = $pdo->prepare("SELECT message_id FROM movies WHERE file_code = ?");
     $stmt->execute([$kino_kodi]);
     $movie = $stmt->fetch(PDO::FETCH_ASSOC);
-
+    $settings = [];
+    $stmt1 = $pdo->query("SELECT * FROM settings");
+    while ($row = $stmt1->fetch(PDO::FETCH_ASSOC)) {
+        $settings[$row['setting_key']] = $row['setting_value'];
+    }
+    $protect = false
+    if (settings["protect_content"] == "1") {
+        $protect = true;
+    }
     if ($movie) {
         bot('copyMessage', [
             'chat_id' => $chat_id,
             'from_chat_id' => BASE_CHANNEL_ID,
-            'message_id' => $movie['message_id']
+            'message_id' => $movie['message_id'],
+            'protect_content' => $protect,
         ]);
     } else {
         bot('sendMessage', ['chat_id' => $chat_id, 'text' => "❌ Kino topilmadi!"]);
