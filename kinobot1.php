@@ -302,28 +302,51 @@ if (isset($update->message)) {
         }
 
         // Kanal qo'shish bosqichlari
+                // 1-bosqich: Kanal ID si kiritilganda
         if ($user_step == 'add_chan_id' && $text != "Ortga") {
             $pdo->prepare("UPDATE users SET step = 'add_chan_title', temp_msg_id = ? WHERE chat_id = ?")->execute([$text, $chat_id]);
-            bot('sendMessage', ['chat_id' => $chat_id, 'text' => "Kanal nomini kiriting:"]);
+            bot('sendMessage', [
+                'chat_id' => $chat_id, 
+                'text' => "Kanal nomini kiriting (masalan: `Obuna bo'lish`):",
+                'parse_mode' => 'Markdown'
+            ]);
             exit();
         } 
+        
+        // 2-bosqich: Kanal nomi kiritilganda
         elseif ($user_step == 'add_chan_title' && $text != "Ortga") {
-            $chan_id_temp = $temp_msg_id;
-            $pdo->prepare("UPDATE users SET step = 'add_chan_url', temp_msg_id = ? WHERE chat_id = ?")->execute([$chan_id_temp . "|||" . $text, $chat_id]);
-            bot('sendMessage', ['chat_id' => $chat_id, 'text' => "Kanal linkini kiriting (`https://t.me/...`):", 'parse_mode' => 'Markdown']);
+            // Avvalgi ID va yangi Nomni '|||' bilan ajratib saqlaymiz
+            $combined_data = $temp_msg_id . "|||" . $text;
+            $pdo->prepare("UPDATE users SET step = 'add_chan_url', temp_msg_id = ? WHERE chat_id = ?")->execute([$combined_data, $chat_id]);
+            
+            bot('sendMessage', [
+                'chat_id' => $chat_id, 
+                'text' => "Kanalga taklif linkini (URL) yuboring (masalan: `https://t.me/bf_va_kinolar`):", 
+                'parse_mode' => 'Markdown'
+            ]);
             exit();
         }
+        
+        // 3-bosqich: Kanal URL kiritilganda va Bazaga saqlash
         elseif ($user_step == 'add_chan_url' && $text != "Ortga") {
+            // temp_msg_id ichidan ID va Nomni ajratib olamiz
             $data_parts = explode("|||", $temp_msg_id);
-            $c_id = $data_parts[0] ?? '';
-            $c_title = $data_parts[1] ?? 'Kanal';
+            $c_id = trim($data_parts[0] ?? '');
+            $c_title = trim($data_parts[1] ?? 'Kanal');
 
+            // Bazaga aniq ID, Nom va URL ni saqlaymiz
             $stmt = $pdo->prepare("INSERT INTO channels (channel_id, channel_title, channel_url) VALUES (?, ?, ?)");
             $stmt->execute([$c_id, $c_title, $text]);
             
+            // Step va temp_msg_id ni tozalaymiz
             $pdo->prepare("UPDATE users SET step = 'none', temp_msg_id = NULL WHERE chat_id = ?")->execute([$chat_id]);
 
-            bot('sendMessage', ['chat_id' => $chat_id, 'text' => "✅ Kanal qo'shildi!", 'reply_markup' => $admin_keyboard]);
+            bot('sendMessage', [
+                'chat_id' => $chat_id, 
+                'text' => "✅ Kanal majburiy obunaga muvaffaqiyatli qo'shildi!\n\n📌 **ID:** `$c_id`\n📌 **Nomi:** $c_title\n📌 **Link:** $text", 
+                'parse_mode' => 'Markdown',
+                'reply_markup' => $admin_keyboard
+            ]);
             exit();
         }
     }
