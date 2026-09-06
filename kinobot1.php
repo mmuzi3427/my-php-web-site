@@ -71,7 +71,7 @@ function sendMovie($chat_id, $kino_kodi, $pdo) {
             'chat_id' => $chat_id,
             'from_chat_id' => BASE_CHANNEL_ID,
             'message_id' => $movie['message_id'],
-            'protect_content' => $protect,
+            'protect_content' => true
         ]);
     } else {
         bot('sendMessage', ['chat_id' => $chat_id, 'text' => "❌ Kino topilmadi!"]);
